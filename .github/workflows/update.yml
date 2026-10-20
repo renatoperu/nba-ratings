@@ -1,0 +1,56 @@
+name: Update data and publish
+
+on:
+  schedule:
+    - cron: "25 */4 * * *"     # every 4 hours
+  workflow_dispatch:           # "Run workflow" button
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refresh schedule and results
+        run: |
+          pip install --quiet pandas pyarrow requests
+          python scripts/update_season.py
+
+      - name: Save the data file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/season.json
+          git diff --cached --quiet || (git commit -m "Update 2026-27 schedule and results" && git push)
+
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp -r index.html manifest.webmanifest sw.js icons fonts data _site/
+          V=$(cat index.html manifest.webmanifest icons/* fonts/* | sha256sum | cut -c1-12)
+          sed -i "s/__VERSION__/$V/" _site/sw.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
