@@ -186,6 +186,27 @@ tr.clk{cursor:pointer}
 .setgrid label{color:var(--muted)}
 .checks{display:flex;gap:14px;flex-wrap:wrap}
 .checks label{color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+
+#ratingsTbl tbody tr,#projTbl tbody tr[data-f]{cursor:pointer}
+#projTbl td.rt b{font-size:19px}#projTbl td.c2{white-space:nowrap}#projTbl tr.grp td{background:var(--hover);font:700 15px var(--display);letter-spacing:.04em;text-align:left;padding:7px 8px}
+.ghost2{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.dlg{position:fixed;inset:0;z-index:50;background:rgba(5,10,25,.6);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dlg[hidden]{display:none}
+.dlg-in{position:relative;background:var(--card);color:var(--ink);width:min(760px,100%);margin:3vh auto;border-radius:14px;padding:18px 18px 24px}
+.dlg-x{position:absolute;right:10px;top:8px;font-size:28px;line-height:1;background:transparent;border:0;color:var(--muted);padding:4px 10px;cursor:pointer}
+.td-h{display:flex;align-items:center;gap:10px;margin:0 36px 12px 0}.td-h h2{margin:0;font:800 30px/1 var(--display)}
+.td-sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 16px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px}.tile b{display:block;font:800 24px/1.1 var(--display)}.tile span{font-size:12.5px;color:var(--muted)}
+.chart{position:relative;margin:0 0 16px}.chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.chart .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--card);font-size:12.5px;padding:4px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%)}
+.chips10{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.chips10 i{font-style:normal;font-weight:700;font-size:13px;min-width:26px;text-align:center;border-radius:6px;padding:2px 6px}
+.chips10 i.w{background:var(--up);color:#fff}.chips10 i.l{background:var(--down);color:#fff}
+.td-t{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 14px}.td-t td{padding:5px 4px;border-bottom:1px solid var(--line)}
+.dlg h3{margin:14px 0 6px;font:800 20px var(--display)}
+.updbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.updbar[hidden]{display:none}
+@media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
 @media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
 </style>
 </head>
@@ -279,12 +300,24 @@ tr.clk{cursor:pointer}
           <th class="sortable hide-s" data-k="rd" title="Rating deviation: uncertainty in the rating. Resets at the start of every season.">RD</th>
           <th class="sortable" data-k="w" title="Regular season incl. NBA Cup group and knockout games (these count in the standings)">Reg. season</th>
           <th class="sortable hide-s" data-k="pw" title="Play-in and playoff games">Postseason</th>
-          <th class="sortable" data-k="hiR" title="Highest rating this season, with date. Hover for the game.">Season high</th>
-          <th class="sortable" data-k="loR" title="Lowest rating this season, with date. Hover for the game.">Season low</th>
           <th class="hide-s">Trend</th>
         </tr></thead>
         <tbody></tbody>
       </table></div>
+      <div id="projWrap" hidden>
+        <div class="controls"><label>Group by <select id="projView"><option value="conf">Conference</option><option value="league">League</option></select></label>
+        <span class="hint" id="projNote"></span></div>
+        <div class="scroll"><table id="projTbl">
+          <thead><tr><th class="rk">#</th><th class="l">Team</th>
+          <th title="Current rating">Rating</th>
+          <th title="Record so far (regular season + NBA Cup games that count)">W-L</th>
+          <th title="Expected wins-losses in the games still to play, using today's ratings">Rest</th>
+          <th title="Expected final record: current record + expected rest of season">Final</th>
+          <th title="Strength of schedule: average rating of the opponents in the remaining games">SOS</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <p class="hint">Tap a team for its season detail. Projections use today's ratings for every remaining game (home edge included) and are not simulated; use the Simulate tab for playoff odds.</p>
+      </div>
     </div>
     <details class="card">
       <summary>How the ratings work</summary>
@@ -396,7 +429,7 @@ tr.clk{cursor:pointer}
       <h2>Automatic updates</h2>
       <p class="hint">A scheduled job refreshes the schedule and results several times a day and publishes them with this app; the app merges them every time you open it. Results you type yourself are never overwritten, and a result you clear is filled in again from the file.</p>
       <p class="msg mut" id="autoStatus">Checking…</p>
-      <p><button id="btnCheck">Check for updates now</button></p>
+      <p><button id="btnCheck">Check for updates now</button> <button id="btnReload" class="ghost2">Reload app (clear cache)</button></p>
     </div>
     <div class="card">
       <h2>Data</h2>
@@ -485,6 +518,11 @@ tr.clk{cursor:pointer}
   </section>
 </main>
 
+<div id="teamDlg" class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="tdName"><div class="dlg-in">
+  <button class="dlg-x" id="tdClose" aria-label="Close">×</button>
+  <div id="tdBody"></div>
+</div></div>
+<div id="updBar" class="updbar" hidden>A new version is ready. <button id="updBtn">Reload</button></div>
 <script>
 // ==ENGINE START==
 const Q = 173.7178;
@@ -859,18 +897,185 @@ function renderRatings(){
   const span = Math.max(60, mx - mn), ch = champs[y];
   $('#ratingsTbl tbody').innerHTML = rows.map(function(r){
     const c = F[r.f].c, barW = Math.round(10 + 90 * (r.rating - mn) / span), cls = r.dlt > 0.05 ? 'up' : r.dlt < -0.05 ? 'down' : 'mut';
-    const hiG = sn.hiGi[r.l], loG = sn.loGi[r.l];
     const star = ch && ch.w === r.f && pos === sn.days.length ? ' <span title="Champion">🏆</span>' : '';
-    return '<tr><td class="rk">' + rank[r.f] + '</td><td class="l">' + badge(r.f, y) + '<span class="hide-s">' + r.name + '</span>' + star + '</td>' +
+    return '<tr data-f="' + r.f + '"><td class="rk">' + rank[r.f] + '</td><td class="l">' + badge(r.f, y) + '<span class="hide-s">' + r.name + '</span>' + star + '</td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + r.rating.toFixed(0) + '</b><span class="rbar"><i style="width:' + barW + '%"></i></span></td>' +
       '<td class="' + cls + '">' + sgn(r.dlt, 1) + '</td><td class="mut hide-s">' + r.rd.toFixed(0) + '</td>' +
       '<td>' + r.rw + '-' + r.rl + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
-      '<td class="hl" title="' + (hiG >= 0 ? gameText(hiG, r.f) : '') + '"><b>' + (hiG >= 0 ? r.hiR.toFixed(0) : '–') + '</b><span class="dt">' + (hiG >= 0 ? fmtDate(dayToIso(D.day[hiG])) : '') + '</span></td>' +
-      '<td class="hl" title="' + (loG >= 0 ? gameText(loG, r.f) : '') + '"><b>' + (loG >= 0 ? r.loR.toFixed(0) : '–') + '</b><span class="dt">' + (loG >= 0 ? fmtDate(dayToIso(D.day[loG])) : '') + '</span></td>' +
       '<td class="hide-s">' + sparkline(r.ser) + '</td></tr>';
   }).join('');
+  renderProj();
   renderCourt();
 }
+
+
+// ---------- projections and team detail ----------
+const GAMES82 = 82;
+function isLiveView(){ return cur().y === LIVE_Y; }
+function projection(){
+  const st = R.state, rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
+  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, upc:[]}; });
+  LG.forEach(function(g){
+    if(!inStandings(g)) return;
+    const h = FK[g.home], a = FK[g.away]; if(!P[h] || !P[a]) return;
+    if(isPlayed(g)){
+      const hw = g.hPts > g.aPts; P[h][hw ? 'w' : 'l']++; P[a][hw ? 'l' : 'w']++;
+    } else {
+      const p = liveProb(g.home, g.away, g.neu);
+      P[h].left++; P[a].left++; P[h].ew += p; P[a].ew += 1 - p;
+      P[h].sosS += rat(a); P[h].sosN++; P[a].sosS += rat(h); P[a].sosN++;
+      P[h].upc.push({date:g.date, opp:a, home:true, p:p, type:g.type}); P[a].upc.push({date:g.date, opp:h, home:false, p:1 - p, type:g.type});
+    }
+  });
+  CUR_IDX.forEach(function(f){
+    const x = P[f]; x.rating = rat(f);
+    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.left);
+    const avg = x.left ? x.ew / x.left : 0.5;
+    x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
+    x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
+    x.sos = x.sosN ? x.sosS / x.sosN : NaN;
+    x.conf = EAST.indexOf(F[f].k) >= 0 ? 'East' : 'West';
+    x.upc.sort(function(p, q){ return p.date < q.date ? -1 : 1; });
+  });
+  return P;
+}
+const f1 = function(v){ return v.toFixed(1); };
+function renderProj(){
+  const on = isLiveView() && pos === cur().days.length;
+  $('#projWrap').hidden = !on; $('#ratingsTbl').parentNode.hidden = on;
+  if(!on) return;
+  const P = projection(), sn = cur(), view = $('#projView').value;
+  const list = CUR_IDX.map(function(f){ return P[f]; });
+  const ovr = list.slice().sort(function(a, b){ return b.rating - a.rating; }), rk = {}; ovr.forEach(function(x, i){ rk[x.f] = i + 1; });
+  const byProj = function(a, b){ return b.projW - a.projW || b.rating - a.rating; };
+  const row = function(x, n){
+    const c = F[x.f].c;
+    return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span></td>' +
+      '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + x.rating.toFixed(0) + '</b></td>' +
+      '<td>' + x.w + '-' + x.l + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td>' +
+      '<td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td><td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
+  };
+  let html = '';
+  if(view === 'conf'){
+    ['East', 'West'].forEach(function(cf){
+      html += '<tr class="grp"><td colspan="7">' + (cf === 'East' ? 'Eastern' : 'Western') + ' Conference</td></tr>';
+      list.filter(function(x){ return x.conf === cf; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
+    });
+  } else list.slice().sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
+  $('#projTbl tbody').innerHTML = html;
+  const unsched = list[0].unsched;
+  $('#projNote').textContent = 'Ranked by expected final wins.' + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
+}
+function ratingAt(sn, l, day){ // rating after the last rating period on or before `day`
+  let v = sn.startRating[l];
+  for(let p = 0; p < sn.days.length && sn.days[p] <= day; p++) v = sn.rate[p * sn.nT + l];
+  return v;
+}
+function openTeam(f, noPush){
+  const sn = cur(), y = sn.y, nT = sn.nT, l = sn.teams.indexOf(f); if(l < 0) return;
+  const lim = dayLimit(), live = isLiveView() && pos === sn.days.length;
+  const pts = [{d:sn.days[0] - 1, r:sn.startRating[l], rd:sn.startRD[l]}];
+  for(let p = 0; p < pos; p++) pts.push({d:sn.days[p], r:sn.rate[p * nT + l], rd:sn.rd[p * nT + l]});
+  const now = pts[pts.length - 1], last = pos === 0 ? sn.days[0] - 1 : sn.days[pos - 1];
+  const ord = []; sn.teams.forEach(function(g, k){ ord.push({f:g, r:pos === 0 ? sn.startRating[k] : sn.rate[(pos - 1) * nT + k]}); });
+  ord.sort(function(a, b){ return b.r - a.r; });
+  const rank = ord.findIndex(function(x){ return x.f === f; }) + 1;
+  const dSeason = now.r - pts[0].r, dMonth = now.r - ratingAt(sn, l, last - 30), dWeek = now.r - ratingAt(sn, l, last - 7);
+  // games
+  let w = 0, lo = 0; const lastGames = [];
+  for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(!R.used[gi] || D.day[gi] > lim || (D.h[gi] !== f && D.a[gi] !== f)) continue;
+    const home = D.h[gi] === f, win = home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi];
+    if(D.ty[gi] <= 1){ if(win) w++; else lo++; }
+    lastGames.push({gi:gi, home:home, win:win, opp:home ? D.a[gi] : D.h[gi]});
+  }
+  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length;
+  const sg = function(v){ return '<b class="' + (v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut') + '">' + sgn(v, 1) + '</b>'; };
+  let proj = null; if(live){ proj = projection()[f]; }
+  let h = '<div class="td-h">' + badge(f, y) + '<h2>' + tname(f, y) + '</h2></div>' +
+    '<p class="td-sub">' + seasonLabel(y) + ' · as of ' + (pos === 0 ? 'season start' : fmtDate(dayToIso(last))) + ' · ' + (CUR_CONF(f) ? CUR_CONF(f) + ' · ' : '') + '#' + rank + ' of ' + nT + ' by rating</p>' +
+    '<div class="tiles">' +
+    '<div class="tile"><b>' + now.r.toFixed(0) + '</b><span>Rating</span></div>' +
+    '<div class="tile"><b>±' + now.rd.toFixed(0) + '</b><span>RD (uncertainty)</span></div>' +
+    '<div class="tile">' + sg(dSeason) + '<span>Δ season</span></div>' +
+    '<div class="tile">' + sg(dMonth) + '<span>Δ last 30 days</span></div>' +
+    '<div class="tile">' + sg(dWeek) + '<span>Δ last 7 days</span></div>' +
+    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w) + '</b><span>Last ' + l10.length + '</span></div>' +
+    '<div class="tile"><b>' + w + '-' + lo + '</b><span>Record</span></div>' +
+    (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>Projected final</span></div>' +
+      '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' +
+      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' : '') +
+    '</div>' +
+    '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
+    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : 'l') + '">' + (x.win ? 'W' : 'L') + '</i>'; }).join('') + '</div>' +
+    '<table class="td-t"><tbody>' + l10.map(function(x){
+      const gi = x.gi, mine = x.home ? D.hp[gi] : D.ap[gi], theirs = x.home ? D.ap[gi] : D.hp[gi], dl = x.home ? R.dH[gi] : R.dA[gi];
+      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : 'down') + '">' + (x.win ? 'W' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  if(proj && proj.upc.length){
+    h += '<h3>Next games</h3><table class="td-t"><tbody>' + proj.upc.slice(0, 6).map(function(u){
+      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+  $('#tdBody').innerHTML = h;
+  drawChart($('#tdChart'), pts, y);
+  $('#teamDlg').hidden = false; $('#teamDlg').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  if(!noPush){ try{ history.pushState({dlg:1}, ''); }catch(e){} }
+}
+function CUR_CONF(f){ const k = F[f].k; return F[f].cur ? (EAST.indexOf(k) >= 0 ? 'East' : 'West') : ''; }
+function closeTeam(fromPop){
+  if($('#teamDlg').hidden) return;
+  $('#teamDlg').hidden = true; document.body.style.overflow = '';
+  if(!fromPop && history.state && history.state.dlg){ try{ history.back(); }catch(e){} }
+}
+function drawChart(el, pts, y){
+  const W = 640, H = 260, L = 58, Rr = 14, T = 14, B = 34;
+  let mn = Infinity, mx = -Infinity; pts.forEach(function(p){ if(p.r < mn) mn = p.r; if(p.r > mx) mx = p.r; });
+  const pad = Math.max(8, (mx - mn) * 0.12); mn -= pad; mx += pad;
+  const d0 = pts[0].d, d1 = Math.max(pts[pts.length - 1].d, d0 + 1);
+  const X = function(d){ return L + (d - d0) / (d1 - d0) * (W - L - Rr); }, Y = function(r){ return T + (mx - r) / (mx - mn) * (H - T - B); };
+  let g = '';
+  for(let i = 0; i <= 4; i++){
+    const v = mn + (mx - mn) * i / 4, yy = Y(v);
+    g += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--line)"/><text x="' + (L - 8) + '" y="' + (yy + 7) + '" text-anchor="end" font-size="20" fill="var(--muted)">' + v.toFixed(0) + '</text>';
+  }
+  // month ticks
+  const seen = {}; let lastX = -99;
+  pts.forEach(function(p){
+    const iso = dayToIso(p.d), m = iso.slice(0, 7);
+    if(seen[m]) return; seen[m] = 1;
+    const x = X(p.d); if(x - lastX < 70) return; lastX = x;
+    g += '<text x="' + x + '" y="' + (H - 8) + '" font-size="20" fill="var(--muted)" text-anchor="middle">' + MONTHS[+iso.slice(5, 7) - 1] + '</text>';
+  });
+  const y0 = Y(pts[0].r);
+  g += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--muted)" stroke-dasharray="4 4" opacity=".6"/>';
+  g += '<polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" points="' + pts.map(function(p){ return X(p.d).toFixed(1) + ',' + Y(p.r).toFixed(1); }).join(' ') + '"/>';
+  const lp = pts[pts.length - 1];
+  g += '<circle cx="' + X(lp.d) + '" cy="' + Y(lp.r) + '" r="4.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>';
+  g += '<g id="tdCur" hidden><line id="tdV" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--muted)"/><circle id="tdDot" r="5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/></g>';
+  el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Rating through the season">' + g + '</svg><div class="tip" hidden></div>';
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), cg = svg.querySelector('#tdCur');
+  const move = function(e){
+    const bb = svg.getBoundingClientRect(), cx = (e.clientX - bb.left) / bb.width * W;
+    let best = 0, bd = 1e9; pts.forEach(function(p, i){ const dd = Math.abs(X(p.d) - cx); if(dd < bd){ bd = dd; best = i; } });
+    const p = pts[best], px = X(p.d), py = Y(p.r);
+    cg.removeAttribute('hidden'); svg.querySelector('#tdV').setAttribute('x1', px); svg.querySelector('#tdV').setAttribute('x2', px);
+    const dot = svg.querySelector('#tdDot'); dot.setAttribute('cx', px); dot.setAttribute('cy', py);
+    tip.hidden = false; tip.textContent = (best === 0 ? 'Season start' : fmtDate(dayToIso(p.d))) + ' · ' + p.r.toFixed(0) + ' (±' + p.rd.toFixed(0) + ')';
+    tip.style.left = Math.max(70, Math.min(bb.width - 70, px / W * bb.width)) + 'px'; tip.style.top = (py / H * bb.height) + 'px';
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', function(){ tip.hidden = true; cg.setAttribute('hidden', ''); });
+}
+$('#projView').addEventListener('change', renderProj);
+[$('#ratingsTbl tbody'), $('#projTbl tbody')].forEach(function(tb){
+  tb.addEventListener('click', function(e){ const tr = e.target.closest('tr[data-f]'); if(tr) openTeam(+tr.dataset.f); });
+});
+$('#tdClose').addEventListener('click', function(){ closeTeam(false); });
+$('#teamDlg').addEventListener('click', function(e){ if(e.target === this) closeTeam(false); });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeTeam(false); });
+window.addEventListener('popstate', function(){ closeTeam(true); });
 
 // ---------- games tab ----------
 function renderGames(){
@@ -1380,7 +1585,7 @@ async function syncSeason(manual){
   const el = $('#autoStatus'); lastSync = Date.now();
   if(manual) el.textContent = 'Checking…';
   try{
-    const resp = await fetch('data/season.json', {cache:'no-cache'});
+    const resp = await fetch('data/season.json?t=' + Date.now(), {cache:'no-store'});
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const file = await resp.json();
     if(!file || file.season !== LIVE_Y || !Array.isArray(file.games)) throw new Error('unexpected file');
@@ -1389,6 +1594,7 @@ async function syncSeason(manual){
     const last = file.games.filter(function(g){ return g[5] != null; }).map(function(g){ return g[0]; }).sort().pop();
     el.className = 'msg mut';
     el.textContent = 'Data file from ' + fmtStamp(file.generated) + ' · ' + file.games.length + ' games' + (last ? ', latest result ' + fmtDate(last) : ', no results yet') +
+      ' · ' + LG.filter(isPlayed).length + ' results in the app' +
       (r.filled || r.added || r.removed ? ' · just merged: ' + r.filled + ' results, ' + r.added + ' new games' + (r.removed ? ', ' + r.removed + ' removed' : '') : ' · nothing new') + '.';
   }catch(err){
     el.className = 'msg mut';
@@ -1567,6 +1773,14 @@ function wireLive(){
   $('#btnAdd').addEventListener('click', addGame);
   $('#btnImport').addEventListener('click', doImport);
   $('#btnCheck').addEventListener('click', function(){ syncSeason(true); });
+  $('#btnReload').addEventListener('click', async function(){
+    try{
+      if('serviceWorker' in navigator){ const rs = await navigator.serviceWorker.getRegistrations(); for(const r of rs) await r.unregister(); }
+      if(window.caches){ const ks = await caches.keys(); for(const k of ks) await caches.delete(k); }
+    }catch(e){}
+    location.reload();
+  });
+  $('#updBtn').addEventListener('click', function(){ location.reload(); });
   document.addEventListener('visibilitychange', function(){ if(!document.hidden && Date.now() - lastSync > 20 * 60 * 1000) syncSeason(false); });
   $('#btnExport').addEventListener('click', exportCsv);
   $('#btnClear').addEventListener('click', function(){
@@ -1581,7 +1795,11 @@ function wireLive(){
 
 // ---------- install / offline ----------
 try{
-  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function(){});
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    const hadCtl = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){});
+    navigator.serviceWorker.addEventListener('controllerchange', function(){ if(hadCtl) $('#updBar').hidden = false; });
+  }
   if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
 }catch(e){}
 
