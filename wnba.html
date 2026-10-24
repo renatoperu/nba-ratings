@@ -1,0 +1,1858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<script>try{var id='wnba',l=localStorage.getItem('lastLeague');if(!/[?&]lg=/.test(location.search)&&l&&l!==id){location.replace(l==='wnba'?'wnba.html':'index.html')}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
+<title>WNBA Ratings</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B1A3A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WNBA Ratings">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+@font-face{font-family:"Barlow";font-weight:400;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:600;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Big Shoulders Display";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/big-shoulders-display-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Big Shoulders Display";font-weight:800;font-style:normal;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"Big Shoulders Display";font-weight:900;font-style:normal;font-display:swap;src:url(fonts/big-shoulders-display-latin-900-normal.woff2) format("woff2")}
+:root{
+  --display:"Big Shoulders Display","Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --navy:#0B1A3A; --royal:#1D428A; --red:#C8102E;
+  --bg:#EDF1F8; --card:#FFFFFF; --ink:#0E1A33; --muted:#586583; --line:#DCE2EE; --hover:#F3F6FC;
+  --accent:#1D428A; --accent-ink:#FFFFFF; --zone2:#D2651A;
+  --up:#0E8A4F; --down:#C8102E; --warn:#7A5200; --warn-bg:#FFE9B0; --input:#FFFFFF;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#080F20; --card:#0F1A35; --ink:#E8EDF8; --muted:#92A0C0; --line:#1E2C4F; --hover:#15224A;
+    --accent:#6C9CFF; --accent-ink:#06112B; --zone2:#F08A3C;
+    --up:#42D78F; --down:#FF6F82; --warn:#F3C969; --warn-bg:#33270C; --input:#0A1329;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- header: scoreboard-style hero with a court that fills as the season is played ---- */
+.hero{background:radial-gradient(900px 380px at 88% -20%,#1F4694 0%,transparent 62%),linear-gradient(180deg,var(--navy) 0%,#091531 100%);color:#F2F6FF;border-bottom:4px solid var(--red)}
+.hero-in{max-width:1180px;margin:0 auto;padding:36px 20px 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,410px);gap:36px;align-items:center}
+h1{margin:0 0 14px;font:800 clamp(42px,6.4vw,74px)/.9 var(--display);letter-spacing:.005em}
+.lede{margin:0 0 14px;max-width:46ch;font-size:17px;color:rgba(235,242,255,.86)}
+.sub{margin:0 0 18px;font-size:14px;color:rgba(235,242,255,.72)}
+.hero .chip{display:inline-block;margin:6px 0 0;padding:2px 10px;border-radius:999px;background:#FFD166;color:#3A2A00;font-size:12.5px;font-weight:700}
+.sub .chip{display:inline-block}
+.hero button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
+.hero button.ghost:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.court-wrap{margin:0}
+.court{position:relative;aspect-ratio:940/500;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 18px 30px -18px rgba(0,0,0,.7)}
+.court svg.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+.court .base{filter:grayscale(.9) brightness(.5)}
+.court .on{clip-path:inset(0 calc(100% * (1 - var(--f,0))) 0 0);transition:clip-path .7s ease}
+.court svg.ball{position:absolute;top:50%;left:calc(3.8% + 92.4% * var(--f,0));width:7.6%;aspect-ratio:1;height:auto;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 3px rgba(0,0,0,.55));transition:left .7s ease}
+.court-wrap figcaption{margin-top:10px;font-size:14px;color:rgba(235,242,255,.78)}
+.court-wrap figcaption strong{font:800 30px/1 var(--display);color:#fff;margin-right:4px}
+.tabs{max-width:1180px;margin:0 auto;padding:0 12px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;background:none;border:0;border-radius:0;color:rgba(235,242,255,.7);font:600 15px var(--body);padding:13px 18px 12px;box-shadow:inset 0 -3px 0 transparent}
+.tabs button:hover{background:rgba(255,255,255,.07);color:#fff;border:0}
+.tabs button.on{color:#fff;box-shadow:inset 0 -3px 0 #fff}
+
+/* ---- page ---- */
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 72px}
+h2{margin:0 0 12px;font:700 25px/1.1 var(--display);letter-spacing:.01em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px 22px;margin-bottom:18px}
+.card.data{border-top:3px solid var(--accent);padding:6px 10px 8px}
+.card.data.pad{padding:18px 18px 10px}
+.scroll{overflow-x:auto}
+.hint{margin:6px 0;color:var(--muted);font-size:13.5px}
+.msg{margin-top:10px;font-size:14px}
+.up{color:var(--up)} .down{color:var(--down)} .mut{color:var(--muted)}
+code{background:var(--hover);padding:1px 6px;border-radius:4px;font-size:12.5px}
+details summary{cursor:pointer;font-weight:600}
+details p{max-width:74ch}
+
+button,select,input,textarea{font:inherit;color:inherit}
+button{font:600 14px var(--body);background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 14px;cursor:pointer;transition:background .15s,border-color .15s}
+button:hover{background:var(--hover);border-color:var(--muted)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.primary:hover{background:var(--accent);filter:brightness(1.12)}
+button.x{padding:2px 8px;color:var(--muted)}
+select,input[type=text],input[type=number],input[type=date],textarea{background:var(--input);border:1px solid var(--line);border-radius:4px;padding:7px 9px}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+textarea{width:100%;min-height:110px;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace}
+.controls{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 14px;align-items:center}
+.controls label{display:inline-flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}.hero-in{grid-template-columns:1fr;gap:22px;padding-top:26px}.court-wrap{max-width:430px}}
+.form{display:grid;grid-template-columns:130px 1fr;gap:10px 12px;align-items:center}
+.form label{color:var(--muted)}
+.row2{display:flex;gap:10px;align-items:center}
+
+/* ---- tables ---- */
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;font-size:12.5px;color:var(--muted);position:sticky;top:0;background:var(--card);border-bottom:2px solid var(--line);user-select:none}
+th.sortable{cursor:pointer}
+th.sortable:hover{color:var(--ink)}
+td.l,th.l{text-align:left}
+tbody tr:hover{background:var(--hover)}
+tbody tr:last-child td{border-bottom:0}
+.rk{font:700 19px/1 var(--display);color:var(--muted);width:44px}
+.tb{display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:23px;margin-right:9px;padding:0 7px;border-radius:4px;background:var(--p);color:var(--t);font:800 14px/1 var(--display);letter-spacing:.05em;box-shadow:inset 0 -3px 0 var(--s),0 0 0 1px rgba(128,138,160,.35);vertical-align:middle}
+td.rt{min-width:128px}
+td.rt b{display:block;font:800 22px/1 var(--display)}
+.rbar{display:block;height:5px;margin:5px 0 0 auto;background:var(--line);border-radius:3px;overflow:hidden}
+.rbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--p) 0 88%,var(--s) 88% 100%);box-shadow:0 0 0 1px rgba(128,138,160,.3)}
+svg.sp{vertical-align:middle;color:var(--accent)}
+tr.dh td{background:var(--hover);text-align:left;font:700 16px var(--display);letter-spacing:.02em;color:var(--ink);padding:6px 12px}
+td.t{text-align:left}
+.nick{color:var(--muted)}
+td.at{color:var(--muted);text-align:center;width:20px}
+input.sc{width:62px;text-align:center;font:800 21px/1 var(--display);padding:5px 4px}
+input.sc.bad{border-color:var(--down);outline:1px solid var(--down)}
+td.pred{color:var(--muted);font-size:13px;text-align:left;min-width:128px}
+td.pred.done{color:var(--ink);font-weight:600}
+td.pred:not(.done){background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 24%,transparent) var(--w,0%),transparent var(--w,0%))}
+
+/* ---- simulate ---- */
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 10px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{display:inline-block;width:16px;height:4px;border-radius:2px;background:var(--zc)}
+.z1{--zc:var(--accent)} .z2{--zc:var(--zone2)} .z3{--zc:var(--muted)}
+.simtbl th,.simtbl td{padding:7px 5px}
+.simtbl th.pos{text-align:center;min-width:42px;border-top:3px solid var(--zc)}
+.simtbl td.pc{text-align:center;min-width:42px;font-weight:500}
+.simtbl td.pc.z{color:var(--muted)}
+.simtbl td.sum{font-weight:700;border-left:1px solid var(--line);padding-left:10px;padding-right:10px}
+[hidden]{display:none!important}
+.empty{display:flex;gap:20px;align-items:center;padding:26px 28px}
+.empty svg{flex:none;width:64px;height:64px}
+.empty h2{margin-bottom:4px}
+.empty p{margin:0;color:var(--muted);max-width:56ch}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---- history additions ---- */
+.hero-in{padding-bottom:18px;padding-top:calc(36px + env(safe-area-inset-top))}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.hero-in,.tabs,.wrap{padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+.seasonbar{display:flex;gap:8px;align-items:center;margin:0 0 16px;flex-wrap:wrap}
+.seasonbar select{font:800 26px/1 var(--display);padding:6px 10px;min-width:150px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.4)}
+.seasonbar select option{color:#0E1A33;background:#fff;font:600 16px var(--body)}
+.seasonbar button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);font-size:18px;padding:5px 13px}
+.seasonbar button:hover{background:rgba(255,255,255,.14);border-color:#fff}
+.hero .facts{margin:0;font-size:14px;color:rgba(235,242,255,.8);max-width:52ch}
+.hero .facts b{color:#fff}
+.scrub{margin:0 0 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center}
+.scrub input[type=range]{width:100%;accent-color:var(--accent)}
+.scrub .when{font:800 20px/1 var(--display);white-space:nowrap}
+.scrub .jumps{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.scrub .jumps button{padding:5px 11px;font-size:13px}
+.dt{display:block;font-size:11.5px;font-weight:500;color:var(--muted)}
+td.hl b{font:700 17px/1.1 var(--display)}
+td.res{text-align:left;white-space:normal;min-width:190px;font-size:13px}
+td.res .dt{display:inline}
+.pill{display:inline-block;padding:0 7px;border-radius:999px;font-size:11.5px;font-weight:700;background:var(--hover);color:var(--muted);border:1px solid var(--line)}
+.pill.P{color:var(--accent)} .pill.I,.pill.C,.pill.F{color:var(--zone2)}
+.winc{font-weight:700}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:11.5px var(--body)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .avg{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2}
+.chart .pt{fill:var(--accent);stroke:var(--card);stroke-width:1.5}
+.chart .hi{fill:var(--up);stroke:var(--card);stroke-width:2}
+.chart .lo{fill:var(--down);stroke:var(--card);stroke-width:2}
+.chart .tt{fill:none;stroke:#E8A91C;stroke-width:2.5}
+.tag{display:inline-block;margin:2px 8px 2px 0}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(8,15,32,.72);display:flex;align-items:center;justify-content:center;color:#fff;font:800 30px var(--display);letter-spacing:.02em}
+.overlay svg{width:46px;height:46px;margin-right:14px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.more{display:block;margin:12px auto}
+select.ty{font-size:12.5px;padding:3px 5px;max-width:132px}
+td.dl{font-size:13px}
+.seasons td.c{text-align:left}.seasons th,.seasons td{padding:8px 7px}.seasons .tb{margin-right:4px}
+tr.clk{cursor:pointer}
+.setgrid{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
+.setgrid label{color:var(--muted)}
+.checks{display:flex;gap:14px;flex-wrap:wrap}
+.checks label{color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+
+#ratingsTbl tbody tr,#projTbl tbody tr[data-f]{cursor:pointer}
+#projTbl td.rt b{font-size:19px}#projTbl td.c2{white-space:nowrap}#projTbl tr.grp td{background:var(--hover);font:700 15px var(--display);letter-spacing:.04em;text-align:left;padding:7px 8px}
+.ghost2{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.dlg{position:fixed;inset:0;z-index:50;background:rgba(5,10,25,.6);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dlg[hidden]{display:none}
+.dlg-in{position:relative;background:var(--card);color:var(--ink);width:min(760px,100%);margin:3vh auto;border-radius:14px;padding:18px 18px 24px}
+.dlg-x{position:absolute;right:10px;top:8px;font-size:28px;line-height:1;background:transparent;border:0;color:var(--muted);padding:4px 10px;cursor:pointer}
+.td-h{display:flex;align-items:center;gap:10px;margin:0 36px 12px 0}.td-h h2{margin:0;font:800 30px/1 var(--display)}
+.td-sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 16px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px}.tile b{display:block;font:800 24px/1.1 var(--display)}.tile span{font-size:12.5px;color:var(--muted)}
+.chart{position:relative;margin:0 0 16px}.chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.chart .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--card);font-size:12.5px;padding:4px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%)}
+.chips10{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.chips10 i{font-style:normal;font-weight:700;font-size:13px;min-width:26px;text-align:center;border-radius:6px;padding:2px 6px}
+.chips10 i.w{background:var(--up);color:#fff}.chips10 i.l{background:var(--down);color:#fff}
+.td-t{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 14px}.td-t td{padding:5px 4px;border-bottom:1px solid var(--line)}
+.dlg h3{margin:14px 0 6px;font:800 20px var(--display)}
+.updbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.updbar[hidden]{display:none}
+@media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
+.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.06em;padding:8px 18px}.lgsw a.on{background:#fff;color:var(--navy)}
+@media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="plank" width="140" height="50" patternUnits="userSpaceOnUse">
+      <rect width="140" height="50" fill="#C98D4B"/>
+      <rect width="140" height="25" fill="#D9A560" opacity=".35"/>
+      <path d="M0 .5H140M0 25.5H140M46 0V25M104 25V50" stroke="#9A642D" stroke-width="1.1" opacity=".55" fill="none"/>
+    </pattern>
+    <g id="halfCourt" fill="none" stroke="#F8F6EF" stroke-width="3.5">
+      <rect x="1.75" y="170" width="188" height="160" fill="#1B4C9E" fill-opacity=".8"/>
+      <path d="M190 190A60 60 0 0 1 190 310"/>
+      <path d="M190 190A60 60 0 0 0 190 310" stroke-dasharray="10 8"/>
+      <path d="M0 30H142A237.5 237.5 0 0 1 142 470H0"/>
+      <path d="M52 210A40 40 0 0 1 52 290"/>
+      <path d="M40 220V280" stroke-width="4.5"/>
+      <circle cx="52" cy="250" r="9" stroke="#E8742A" stroke-width="4.5"/>
+    </g>
+    <g id="courtArt">
+      <rect width="940" height="500" fill="url(#plank)"/>
+      <use href="#halfCourt"/>
+      <use href="#halfCourt" transform="translate(940 0) scale(-1 1)"/>
+      <g fill="none" stroke="#F8F6EF" stroke-width="3.5">
+        <path d="M470 0V500"/>
+        <circle cx="470" cy="250" r="60"/>
+        <rect x="1.75" y="1.75" width="936.5" height="496.5"/>
+      </g>
+    </g>
+    <symbol id="ballSym" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="14.5" fill="#E8742A" stroke="#241006" stroke-width="1.6"/>
+      <path d="M16 1.5v29M1.5 16h29M6 5.5C12 11 12 21 6 26.5M26 5.5C20 11 20 21 26 26.5" fill="none" stroke="#241006" stroke-width="1.4"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="overlay" id="overlay"><svg aria-hidden="true"><use href="#ballSym"/></svg><span id="overlayTxt">Rating 80 seasons…</span></div>
+
+<header class="hero">
+  <div class="hero-in">
+    <div class="hero-copy">
+      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="">NBA</a><a href="wnba.html?lg=wnba" class="on">WNBA</a></nav>
+      <h1>WNBA power ratings <br>2002–2026</h1>
+      <div class="seasonbar">
+        <button id="prevS" aria-label="Previous season">◀</button>
+        <select id="seasonSel" aria-label="Season"></select>
+        <button id="nextS" aria-label="Next season">▶</button>
+      </div>
+      <p class="facts" id="facts"></p>
+      <p class="facts" id="liveStatus" style="margin-top:10px" hidden></p>
+    </div>
+    <figure class="court-wrap">
+      <div class="court" id="court" role="img" aria-label="Season progress">
+        <svg class="layer base" viewBox="0 0 940 500" aria-hidden="true"><use href="#courtArt"/></svg>
+        <svg class="layer on" viewBox="0 0 940 500" aria-hidden="true"><use href="#courtArt"/></svg>
+        <svg class="ball" aria-hidden="true"><use href="#ballSym"/></svg>
+      </div>
+      <figcaption id="courtTxt"></figcaption>
+    </figure>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ratings" class="on">Ratings</button>
+    <button data-tab="games">Games</button>
+    <button data-tab="sim">Simulate</button>
+    <button data-tab="add">Add / Import</button>
+    <button data-tab="records">Records</button>
+    <button data-tab="seasons">Seasons</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section id="tab-ratings">
+    <div class="card">
+      <div class="scrub">
+        <input type="range" id="scrub" min="0" max="1" value="1" aria-label="Date within the season">
+        <span class="when" id="when"></span>
+        <div class="jumps">
+          <button id="jStart">Season start</button>
+          <button id="jRS">End of regular season</button>
+          <button id="jPI" data-playin title="First play-in game">Play-in starts</button>
+          <button id="jPO" title="First playoff game">Playoffs start</button>
+          <button id="jEnd">End of season</button>
+        </div>
+      </div>
+      <div class="scroll"><table id="ratingsTbl">
+        <thead><tr>
+          <th class="rk">#</th>
+          <th class="l sortable" data-k="name">Team</th>
+          <th class="sortable" data-k="rating">Rating</th>
+          <th class="sortable" data-k="dlt" title="Change since the start of the season (after the carry-over adjustment)">Δ season</th>
+          <th class="sortable hide-s" data-k="rd" title="Rating deviation: uncertainty in the rating. Resets at the start of every season.">RD</th>
+          <th class="sortable" data-k="w" title="Regular season incl. Commissioner’s Cup games that count in the standings">Reg. season</th>
+          <th class="sortable hide-s" data-k="pw" title="Play-in and playoff games">Postseason</th>
+          <th class="hide-s">Trend</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div id="projWrap" hidden>
+        <div class="controls"><label>Group by <select id="projView"><option value="conf">Conference</option><option value="league">League</option></select></label>
+        <span class="hint" id="projNote"></span></div>
+        <div class="scroll"><table id="projTbl">
+          <thead><tr><th class="rk">#</th><th class="l">Team</th>
+          <th title="Current rating">Rating</th>
+          <th title="Record so far (regular season + Commissioner’s Cup games that count)">W-L</th>
+          <th title="Expected wins-losses in the games still to play, using today's ratings">Rest</th>
+          <th title="Expected final record: current record + expected rest of season">Final</th>
+          <th title="Strength of schedule: average rating of the opponents in the remaining games">SOS</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <p class="hint">Tap a team for its season detail. Projections use today's ratings for every remaining game (home edge included) and are not simulated; use the Simulate tab for playoff odds.</p>
+      </div>
+    </div>
+    <details class="card">
+      <summary>How the ratings work</summary>
+      <p>Every distinct date is one Glicko-2 rating period, so each rating change maps to the games played that day. Regular season, Commissioner’s Cup, Cup final, playoff games all count (switch any of them off in Settings).</p>
+      <p>Between seasons the rating carries over and the rating deviation (RD) resets to a smaller starting value, since the team's history is informative. If a franchise disappeared, all continuing teams are moved by the same amount so the league average is back at 1500. A new franchise enters at the rating that keeps the league average at 1500 (Settings lets you choose between that literal rule and first re-centring the continuing teams so entrants come in at exactly 1500).</p>
+      <p>Margin of victory enters through the game score: the winner scores <code>1 / (1 + e^(−margin / 10))</code>. Home court is worth a rating edge that is estimated each season from the previous two regular seasons only, so nothing looks ahead. Neutral-site games (the 2020 bubble) get no edge.</p>
+      <p>"Win %" in Games is the pre-game probability the home team wins, converted from Glicko-2's expected score to a true win probability.</p>
+    </details>
+  </section>
+
+  <section id="tab-games" hidden>
+    <div class="controls">
+      <label>Team <select id="gTeam"></select></label>
+      <label>Type <select id="gType">
+        <option value="">All games</option><option value="R">Regular season</option><option value="C">Commissioner’s Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option>
+      </select></label>
+      <label class="liveonly" hidden>Month <select id="gMonth"></select></label>
+      <label class="liveonly" hidden>Show <select id="gStatus"><option value="all">All games</option><option value="open">Without result</option><option value="done">With result</option></select></label>
+      <span class="hint" id="gCount"></span>
+    </div>
+    <p class="hint liveonly" hidden>2026: enter both scores and press Tab or Enter; ratings update right away. Change a game's type with the selector (playoff games can be added in Add / Import).</p>
+    <div id="gHist">
+      <div class="card data scroll">
+        <table id="gamesTbl">
+          <thead><tr><th class="l">Date</th><th class="l hide-s">Type</th><th class="l">Away</th><th>Pts</th><th></th><th>Pts</th><th class="l">Home</th><th title="Pre-game probability that the home team wins">Home win %</th><th title="Rating change of the away team from that day's games">Δ away</th><th title="Rating change of the home team from that day's games">Δ home</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="gLive" hidden>
+      <div class="card data scroll">
+        <table id="liveTbl">
+          <thead><tr><th class="l hide-s">Date</th><th class="l hide-s">Type</th><th class="l">Away</th><th>Pts</th><th></th><th>Pts</th><th class="l">Home</th><th class="l" title="Home win probability: pre-game for played games, with current ratings for the rest">Home win %</th><th class="hide-s" title="Rating change away / home">Δ away / home</th><th class="hide-s"></th></tr></thead>
+          <tbody id="gLiveBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <button class="more" id="gMore" hidden>Show more games</button>
+  </section>
+
+  <section id="tab-sim" hidden>
+    <div class="card">
+      <h2>Simulate the rest of 2026</h2>
+      <p class="hint" id="simInfo"></p>
+      <div class="controls">
+        <label>Seasons <input type="number" id="simN" value="10000" min="100" max="200000" step="1000" style="width:100px"></label>
+        <label><input type="checkbox" id="simUnc" checked> Include rating uncertainty</label>
+        <label><input type="checkbox" id="simFill" checked> Generate games missing from the schedule</label>
+      </div>
+      <div class="controls">
+        <button class="primary" id="btnSim">Simulate 10,000 seasons</button>
+        <span class="hint" id="simProg"></span>
+      </div>
+      <details>
+        <summary>How it works</summary>
+        <p>Each simulated season starts from the records so far and plays every standings game (regular season and Commissioner’s Cup) still without a result. Win probabilities come from the current ratings plus the home edge, converted from Glicko-2's expected score to a true win probability when margin scoring is on. With rating uncertainty on, each season first draws every team's true strength from its rating ± RD, so early in the year the spread of outcomes is wide and it tightens as results come in.</p>
+        <p>Any games missing from the schedule are filled in with random opponents until you add them. Teams are ranked by wins with ties broken at random; the real WNBA tiebreakers are not modelled. Playoff games are not simulated: the top 8 teams qualify.</p>
+      </details>
+    </div>
+    <div class="card empty" id="simEmpty">
+      <svg aria-hidden="true"><use href="#ballSym"/></svg>
+      <div>
+        <h2>No simulation yet</h2>
+        <p>Press Simulate to play out the remaining games and see each team's chance of finishing in every spot of its league.</p>
+      </div>
+    </div>
+    <div class="card data pad scroll" id="simOut" hidden>
+      <h2 id="simTitleE"></h2>
+      <div class="legend"></div>
+      <table class="simtbl" id="simTblE"></table>
+    </div>
+    <div class="card data pad scroll" id="simOutW" hidden>
+      <h2 id="simTitleW"></h2>
+      <div class="legend"></div>
+      <table class="simtbl" id="simTblW"></table>
+    </div>
+  </section>
+
+  <section id="tab-add" hidden>
+    <div class="grid2">
+      <div class="card">
+        <h2>Add a 2026 game</h2>
+        <p class="hint">For games missing from the schedule: Cup games, playoff games and anything else. Scores are optional. Scores are optional.</p>
+        <div class="form">
+          <label for="aDate">Date</label><input type="date" id="aDate">
+          <label for="aType">Type</label><select id="aType"></select>
+          <label for="aAway">Away</label><select id="aAway"></select>
+          <label for="aHome">Home</label><select id="aHome"></select>
+          <label>Score (away / home)</label>
+          <div class="row2"><input type="number" id="aAP" min="0" max="250" style="width:84px"><span>/</span><input type="number" id="aHP" min="0" max="250" style="width:84px"></div>
+          <label for="aNeu">Neutral site</label><input type="checkbox" id="aNeu" style="justify-self:start">
+        </div>
+        <p><button class="primary" id="btnAdd">Add game</button></p>
+        <div class="msg" id="addMsg"></div>
+      </div>
+      <div class="card">
+        <h2>Import schedule or results</h2>
+        <p class="hint">On Basketball-Reference's WNBA season schedule pages use Share &amp; Export → Get table as CSV, then upload the file or paste the text. Plain <code>date,away,home[,awayPts,homePts[,type]]</code> rows work too, and so does a <code>Type</code> or <code>Notes</code> column (Cup, Playoffs). Team names, nicknames and abbreviations are all understood.</p>
+        <p><input type="file" id="fFiles" accept=".csv,.tsv,.txt" multiple></p>
+        <textarea id="iText" placeholder="Date,Start (ET),Visitor/Neutral,PTS,Home/Neutral,PTS,...&#10;Sat, Oct 24, 2026,8:00p,Golden State Valkyries,,Atlanta Dream,,..."></textarea>
+        <div class="controls" style="margin-top:8px"><label>Type for rows without one
+          <select id="iType"><option value="auto">Auto (regular season, playoffs after it ends)</option><option value="R">Regular season</option><option value="C">Commissioner’s Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option></select></label></div>
+        <p><button class="primary" id="btnImport">Import</button></p>
+        <div class="msg" id="impMsg"></div>
+        <p class="hint">Importing merges: new games are added and scores fill in results for games you already have. Re-import any time to load new results.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Automatic updates</h2>
+      <p class="hint">A scheduled job refreshes the schedule and results several times a day and publishes them with this app; the app merges them every time you open it. Results you type yourself are never overwritten, and a result you clear is filled in again from the file.</p>
+      <p class="msg mut" id="autoStatus">Checking…</p>
+      <p><button id="btnCheck">Check for updates now</button> <button id="btnReload" class="ghost2">Reload app (clear cache)</button></p>
+    </div>
+    <div class="card">
+      <h2>Data</h2>
+      <p class="hint">The 2026 schedule (354 games from ESPN) is built into the app and refreshed by the automatic updates. Results and edits are saved on this device. Export the CSV for a backup.</p>
+      <div class="row2"><button id="btnExport">Export CSV</button><button id="btnClear">Clear all results</button><button id="btnReset">Reset to built-in schedule</button></div>
+    </div>
+  </section>
+
+  <section id="tab-records" hidden>
+    <div class="card">
+      <h2>Rating history of a franchise</h2>
+      <div class="controls"><label>Franchise <select id="hTeam"></select></label>
+        <span class="hint" id="hInfo"></span></div>
+      <svg class="chart" id="hChart" viewBox="0 0 900 300" role="img" aria-label="End-of-season rating by season"></svg>
+      <p class="hint">Line: end-of-season rating. <span class="up">Green dot</span>: all-time high. <span class="down">Red dot</span>: all-time low. Gold ring: champion. Dashed line: league average 1500.</p>
+    </div>
+    <div class="card data scroll">
+      <table id="recTbl">
+        <thead><tr>
+          <th class="l sortable" data-k="name">Franchise</th>
+          <th class="sortable" data-k="hiR">Highest</th>
+          <th class="l">When and result</th>
+          <th class="sortable" data-k="loR">Lowest</th>
+          <th class="l">When and result</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="hint">Highest and lowest are measured after each day's rating update. The game shown is the last game of that day for the team (the one that produced the rating); results are from the team's point of view. Ties on a value keep the first date it was reached.</p>
+  </section>
+
+  <section id="tab-seasons" hidden>
+    <div class="card data scroll">
+      <table id="seasonsTbl" class="seasons">
+        <thead><tr>
+          <th class="l">Season</th><th class="c l">Champion</th><th title="Champion's rating rank after the last regular-season day">Champ rank (end RS)</th>
+          <th class="l">Top rated, end of reg. season</th><th class="l">Top rated, end of season</th>
+          <th>Teams</th><th class="l hide-s">Entered</th><th class="l hide-s">Left</th><th title="Uniform shift applied to continuing teams at the start of the season">Shift</th><th title="Home edge used (rating points)">Home</th><th title="Share of games where the favourite won">Acc.</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="hint">Champion = winner of the last playoff game of the season. Click a row to open that season.</p>
+  </section>
+
+  <section id="tab-settings" hidden>
+    <div class="grid2">
+      <div class="card">
+        <h2>Glicko-2 parameters</h2>
+        <div class="setgrid" id="setForm">
+          <label for="sTau">τ (system)</label><input type="number" id="sTau" data-k="tau" step="0.1" min="0.1" max="1.5">
+          <label for="sStartRD">RD at season start</label><input type="number" id="sStartRD" data-k="startRD" step="5" min="30" max="350">
+          <label for="sNewRD">RD of new teams</label><input type="number" id="sNewRD" data-k="newRD" step="10" min="30" max="350">
+          <label for="sVol">Initial volatility</label><input type="number" id="sVol" data-k="initVol" step="0.005" min="0.01">
+          <label for="sMov">Use margin</label><input type="checkbox" id="sMov" data-k="useMov" style="justify-self:start">
+          <label for="sScale">Margin scale (pts)</label><input type="number" id="sScale" data-k="movScale" step="1" min="1">
+          <label for="sHcaMode">Home edge</label>
+          <select id="sHcaMode" data-k="hcaMode"><option value="auto">Estimated each season</option><option value="fixed">Fixed value</option></select>
+          <label for="sHca">Fixed edge (pts)</label><input type="number" id="sHca" data-k="hca" step="5" min="0" max="100">
+          <label for="sEntry">New-team entry</label>
+          <select id="sEntry" data-k="entry"><option value="literal">Literal: continuing teams keep their ratings, entrants fill the gap to a 1500 average</option><option value="center">Re-centre continuing teams to 1500 first</option></select>
+        </div>
+        <p class="hint">RD at season start is 100 by default (a grid over all 73,000 games found 75–150 about equally good; the best log loss was at 100). New franchises start at 350.</p>
+        <div class="checks" style="margin:8px 0 12px">
+          <label><input type="checkbox" data-t="R"> Regular season</label>
+          <label><input type="checkbox" data-t="C"> Commissioner’s Cup</label>
+          <label><input type="checkbox" data-t="F"> Cup final</label>
+          <label data-playin><input type="checkbox" data-t="I"> Play-in</label>
+          <label><input type="checkbox" data-t="P"> Playoffs</label>
+        </div>
+        <div class="row2"><button class="primary" id="btnApply">Recalculate all seasons</button><button id="btnDefaults">Restore defaults</button></div>
+        <p class="hint" id="setMsg"></p>
+      </div>
+      <div class="card">
+        <h2>Model quality</h2>
+        <table id="metTbl"><tbody></tbody></table>
+        <p class="hint">Pre-game predictions of the home team winning, evaluated over every game that feeds the ratings. Log loss of a coin flip is 0.693.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Data and assumptions</h2>
+      <p>2002–2025 games and the 2026 season come from ESPN schedules (via the wehoop / sportsdataverse data repository). All-Star games are excluded. Seasons 1997–2001 are not in this source, so every team starts 2002 at 1500 and the first two seasons use default home-court and margin values.</p>
+      <p>Franchise lineage: Orlando Miracle → Connecticut Sun; Utah Starzz → San Antonio Silver Stars/Stars → Las Vegas Aces; Detroit Shock → Tulsa Shock → Dallas Wings. Defunct: Charlotte Sting, Cleveland Rockers, Houston Comets, Miami Sol, Portland Fire (2000–02), Sacramento Monarchs. The 2026 Portland Fire is a new franchise. The 2020 season is treated as neutral-site (Florida bubble).</p>
+      <p>Team badges are plain colour tabs with the code, not logos. Source data can contain rare typos in scores or dates.</p>
+    </div>
+  </section>
+</main>
+
+<div id="teamDlg" class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="tdName"><div class="dlg-in">
+  <button class="dlg-x" id="tdClose" aria-label="Close">×</button>
+  <div id="tdBody"></div>
+</div></div>
+<div id="updBar" class="updbar" hidden>A new version is ready. <button id="updBtn">Reload</button></div>
+<script>
+// ==ENGINE START==
+const Q = 173.7178;
+
+function g(phi){ return 1 / Math.sqrt(1 + 3 * phi * phi / (Math.PI * Math.PI)); }
+function E(d, phiOp){ return 1 / (1 + Math.exp(-g(phiOp) * d)); }
+
+// games: [{d, phiOp, s}] where d = (own mu, incl. any home edge) - (opponent mu, incl. any home edge)
+function glicko2Update(mu, phi, sigma, games, tau){
+  if(!games.length) return {mu: mu, phi: Math.sqrt(phi*phi + sigma*sigma), sigma: sigma};
+  let vInv = 0, sumGS = 0;
+  for(const o of games){
+    const gg = g(o.phiOp), e = E(o.d, o.phiOp);
+    vInv += gg*gg*e*(1-e);
+    sumGS += gg*(o.s - e);
+  }
+  const v = 1 / vInv, delta = v * sumGS;
+  const a = Math.log(sigma*sigma);
+  const f = function(x){
+    const ex = Math.exp(x);
+    return ex*(delta*delta - phi*phi - v - ex) / (2*Math.pow(phi*phi + v + ex, 2)) - (x - a)/(tau*tau);
+  };
+  let A = a, B;
+  if(delta*delta > phi*phi + v) B = Math.log(delta*delta - phi*phi - v);
+  else { let k = 1; while(f(a - k*tau) < 0 && k < 200) k++; B = a - k*tau; }
+  let fA = f(A), fB = f(B), iter = 0;
+  while(Math.abs(B - A) > 1e-6 && iter++ < 200){
+    const C = A + (A - B)*fA/(fB - fA), fC = f(C);
+    if(fC*fB <= 0){ A = B; fA = fB; } else { fA = fA/2; }
+    B = C; fB = fC;
+  }
+  const newSigma = Math.exp(A/2);
+  const phiStar = Math.sqrt(phi*phi + newSigma*newSigma);
+  const newPhi = 1 / Math.sqrt(1/(phiStar*phiStar) + 1/v);
+  const newMu = mu + newPhi*newPhi*sumGS;
+  return {mu: newMu, phi: newPhi, sigma: newSigma};
+}
+
+
+const LEAGUE = {
+  id:'wnba', name:'WNBA', pageName:'wnba.html',
+  seasonLabel:function(y){ return String(y); },
+  typeNames:{R:'Regular season', C:'Commissioner’s Cup', F:'Cup final', I:'Play-in', P:'Playoffs'},
+  defaults:{hca0:25, sd0:12.5},
+  playin:false,
+  groups:[{id:'L', label:'League', teams:null}],
+  groupWord:'League',
+  zones:[{to:8, cls:'z1', label:'playoffs'}, {to:15, cls:'z3', label:'miss the playoffs'}],
+  tops:[8],
+  games:44, stdTotal:330,
+  liveLabel:'2026', liveFile:'data/wnba-season.json', defaultDate:'2026-10-24',
+  hasPostRound:true,
+  keys:{hist:'wnba-history-glicko2-v1', live:'wnba-history-live-v1'},
+  alias:{CON:['Connecticut', 'Sun'], GSV:['GS', 'Golden State', 'Valkyries'], LAS:['LA', 'Sparks', 'Los Angeles'], LVA:['LV', 'Las Vegas', 'Aces'], NYL:['NY', 'Liberty', 'New York'],
+    PDX:['POR', 'Portland'], WAS:['WSH', 'Washington'], DAL:['Dallas'], ATL:['Atlanta'], CHI:['Chicago'], IND:['Indiana'], MIN:['Minnesota'], PHX:['PHO', 'Phoenix'], SEA:['Seattle'], TOR:['Toronto']},
+  cupRe:/(commissioner|cup)/,
+  missingChip:'regular-season games not scheduled yet. Add them in Add / Import.',
+  csvName:'wnba-2026-games.csv'
+};
+
+const BASE_DAY = Date.UTC(1946, 0, 1) / 86400000;
+function dayToIso(d){ return new Date((BASE_DAY + d) * 86400000).toISOString().slice(0, 10); }
+function seasonLabel(y){ return LEAGUE.seasonLabel(y); }
+const TYPE_LETTERS = 'RCFIP';
+const TYPE_NAMES = LEAGUE.typeNames;
+function normCdf(z){
+  const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z*z/2);
+  const p = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+function normInv(p){
+  p = Math.min(1 - 1e-9, Math.max(1e-9, p));
+  let lo = -9, hi = 9;
+  for(let i = 0; i < 60; i++){ const mid = (lo + hi) / 2; if(normCdf(mid) < p) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+function movScore(margin, S){ return S.useMov ? 1 / (1 + Math.exp(-margin / S.movScale)) : (margin > 0 ? 1 : 0); }
+
+const HIST_DEFAULTS = {tau:0.5, initR:1500, newRD:350, startRD:100, initVol:0.06, useMov:true, movScale:10,
+  hcaMode:'auto', hca:25, hca0:45, sdMode:'auto', sd0:12.5, entry:'literal', types:{R:1, C:1, F:1, I:1, P:1}};
+Object.assign(HIST_DEFAULTS, LEAGUE.defaults || {});
+
+// Compact data -> typed arrays. Each game is 10 chars: day(3, base36) away(1) home(1) awayPts(2) homePts(2) type(1; lower case = neutral site).
+function decodeHistory(DATA){
+  const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const F = DATA.fr.map(function(f, i){ return Object.assign({idx:i}, f); });
+  const years = Object.keys(DATA.g).map(Number).sort(function(a, b){ return a - b; });
+  let n = 0; years.forEach(function(y){ n += DATA.g[y].length / 10; });
+  const D = {F:F, n:n, day:new Int32Array(n), a:new Uint8Array(n), h:new Uint8Array(n), ap:new Int16Array(n), hp:new Int16Array(n),
+             ty:new Uint8Array(n), neu:new Uint8Array(n), season:new Int16Array(n), seasons:[]};
+  let gi = 0;
+  years.forEach(function(y){
+    const s = DATA.g[y], g0 = gi;
+    for(let i = 0; i < s.length; i += 10){
+      D.day[gi] = parseInt(s.substr(i, 3), 36); D.a[gi] = L.indexOf(s[i+3]); D.h[gi] = L.indexOf(s[i+4]);
+      D.ap[gi] = parseInt(s.substr(i+5, 2), 36); D.hp[gi] = parseInt(s.substr(i+7, 2), 36);
+      const c = s[i+9]; D.ty[gi] = TYPE_LETTERS.indexOf(c.toUpperCase()); D.neu[gi] = (c === c.toLowerCase()) ? 1 : 0;
+      D.season[gi] = y; gi++;
+    }
+    D.seasons.push({y:y, g0:g0, g1:gi});
+  });
+  return D;
+}
+
+// Name / badge code of a franchise in a given season.
+function eraOf(f, y){
+  let e = f.e[0];
+  for(let i = 0; i < f.e.length; i++){ if(f.e[i][0] <= y) e = f.e[i]; }
+  return {code:e[1], city:e[2], nick:e[3], name:e[2] + ' ' + e[3]};
+}
+
+function runHistory(D, S0, onProgress, resume){
+  const S = Object.assign({}, HIST_DEFAULTS, S0 || {});
+  S.types = Object.assign({}, HIST_DEFAULTS.types, (S0 && S0.types) || {});
+  const NF = D.F.length, n = D.n;
+  const inc = [0, 0, 0, 0, 0]; TYPE_LETTERS.split('').forEach(function(c, i){ inc[i] = S.types[c] ? 1 : 0; });
+  const mu = new Float64Array(NF), phi = new Float64Array(NF), vol = new Float64Array(NF);
+  if(resume){ mu.set(resume.mu); phi.set(resume.phi); vol.set(resume.vol); }
+  const K = S.useMov ? 1 : 0;
+  // season statistics of regular-season, non-neutral games (for the home edge and margin spread used in the NEXT seasons)
+  const stat = resume ? Object.assign({}, resume.stat) : {};
+  D.seasons.forEach(function(sn){
+    let c = 0, ss = 0, sm = 0, sm2 = 0;
+    for(let gi = sn.g0; gi < sn.g1; gi++){
+      if((D.ty[gi] === 0 || D.ty[gi] === 1) && !D.neu[gi]){
+        const m = D.hp[gi] - D.ap[gi]; c++; ss += movScore(m, S); sm += m; sm2 += m * m;
+      }
+    }
+    stat[sn.y] = {n:c, ss:ss, sm:sm, sm2:sm2};
+  });
+  function seasonParams(y){
+    let c = 0, ss = 0, sm = 0, sm2 = 0;
+    [y - 1, y - 2].forEach(function(p){ const t = stat[p]; if(t){ c += t.n; ss += t.ss; sm += t.sm; sm2 += t.sm2; } });
+    let hca = S.hcaMode === 'fixed' ? S.hca : S.hca0, sd = S.sd0;
+    if(c >= 300){
+      if(S.hcaMode === 'auto'){ const p = Math.min(0.9, Math.max(0.1, ss / c)); hca = Math.max(0, Math.min(80, Math.round(Q * Math.log(p / (1 - p)) / 0.98))); }
+      if(S.sdMode === 'auto'){ const mm = sm / c; sd = Math.min(18, Math.max(10, Math.sqrt(sm2 / c - mm * mm))); }
+    }
+    return {hca:hca, sd:sd};
+  }
+  const out = {S:S, seasons:[], pH:new Float32Array(n), dH:new Float32Array(n), dA:new Float32Array(n), used:new Uint8Array(n),
+               hi:resume ? resume.hi.slice() : new Array(NF).fill(null), lo:resume ? resume.lo.slice() : new Array(NF).fill(null), total:{n:0, ll:0, br:0, acc:0}};
+  let prevActive = resume ? resume.prevActive.slice() : [];
+  const c15 = 1.702 * S.movScale;
+  D.seasons.forEach(function(sn, si){
+    const y = sn.y, idx = [];
+    for(let gi = sn.g0; gi < sn.g1; gi++){ if(inc[D.ty[gi]]) idx.push(gi); }
+    const tset = new Set(resume && resume.teams ? resume.teams : []); idx.forEach(function(gi){ tset.add(D.a[gi]); tset.add(D.h[gi]); });
+    const teams = Array.from(tset).sort(function(a, b){ return a - b; }), nT = teams.length;
+    const loc = new Int16Array(NF).fill(-1); teams.forEach(function(f, l){ loc[f] = l; });
+    const prevSet = new Set(prevActive);
+    const cont = teams.filter(function(f){ return prevSet.has(f); });
+    const entered = teams.filter(function(f){ return !prevSet.has(f); });
+    const left = prevActive.filter(function(f){ return loc[f] < 0; });
+    let shift = 0, newRating = null;
+    const P = seasonParams(y);
+    if((si === 0 && !resume) || !cont.length){
+      teams.forEach(function(f){ mu[f] = (S.initR - 1500) / Q; phi[f] = S.newRD / Q; vol[f] = S.initVol; });
+      newRating = S.initR;
+    } else {
+      let sumR = 0; cont.forEach(function(f){ sumR += mu[f] * Q + 1500; });
+      if(left.length > 0 || entered.length === 0 || S.entry === 'center'){
+        shift = 1500 - sumR / cont.length; cont.forEach(function(f){ mu[f] += shift / Q; }); sumR = 1500 * cont.length;
+      }
+      cont.forEach(function(f){ phi[f] = S.startRD / Q; });
+      if(entered.length){
+        newRating = (1500 * nT - sumR) / entered.length;
+        entered.forEach(function(f){ mu[f] = (newRating - 1500) / Q; phi[f] = S.newRD / Q; vol[f] = S.initVol; });
+      }
+    }
+    const startRating = new Float32Array(nT), startRD = new Float32Array(nT);
+    teams.forEach(function(f, l){ startRating[l] = mu[f] * Q + 1500; startRD[l] = phi[f] * Q; });
+    // periods = calendar days with at least one game
+    const dayList = []; idx.forEach(function(gi){ if(!dayList.length || dayList[dayList.length-1] !== D.day[gi]) dayList.push(D.day[gi]); });
+    const NP = dayList.length;
+    const rate = new Float32Array(NP * nT), rdA = new Float32Array(NP * nT);
+    const hiGi = new Int32Array(nT).fill(-1), loGi = new Int32Array(nT).fill(-1), hiR = new Float32Array(nT).fill(-1e9), loR = new Float32Array(nT).fill(1e9);
+    const met = {n:0, ll:0, br:0, acc:0};
+    const snapMu = new Float64Array(nT), snapPhi = new Float64Array(nT), chg = new Float64Array(nT), lastG = new Int32Array(nT);
+    const ent = []; for(let l = 0; l < nT; l++) ent.push([]);
+    const kk = Math.sqrt(P.sd * P.sd + c15 * c15) / P.sd;
+    let p = 0, i = 0, rsEnd = -1;
+    while(i < idx.length){
+      const day = D.day[idx[i]]; let j = i; while(j < idx.length && D.day[idx[j]] === day) j++;
+      for(let l = 0; l < nT; l++){ const f = teams[l]; snapMu[l] = mu[f]; snapPhi[l] = phi[f]; ent[l].length = 0; lastG[l] = -1; }
+      for(let q = i; q < j; q++){
+        const gi = idx[q], hl = loc[D.h[gi]], al = loc[D.a[gi]];
+        const edge = D.neu[gi] ? 0 : P.hca / Q;
+        const d = (snapMu[hl] + edge) - snapMu[al];
+        const m = D.hp[gi] - D.ap[gi];
+        const sH = movScore(m, S);
+        const gg = g(Math.sqrt(snapPhi[hl] * snapPhi[hl] + snapPhi[al] * snapPhi[al]));
+        const e = 1 / (1 + Math.exp(-gg * d));
+        const ph = K ? normCdf(normInv(e) * kk) : e;
+        out.pH[gi] = ph; out.used[gi] = 1;
+        const hw = m > 0 ? 1 : 0, pc = Math.min(1 - 1e-6, Math.max(1e-6, ph));
+        met.n++; met.ll += -(hw ? Math.log(pc) : Math.log(1 - pc)); met.br += (ph - hw) * (ph - hw); met.acc += ((ph > 0.5) === !!hw) ? 1 : 0;
+        ent[hl].push({d:d, phiOp:snapPhi[al], s:sH}); ent[al].push({d:-d, phiOp:snapPhi[hl], s:1 - sH});
+        lastG[hl] = gi; lastG[al] = gi;
+      }
+      for(let l = 0; l < nT; l++){
+        const f = teams[l], before = mu[f];
+        const r = glicko2Update(mu[f], phi[f], vol[f], ent[l], S.tau);
+        mu[f] = r.mu; phi[f] = r.phi; vol[f] = r.sigma; chg[l] = (r.mu - before) * Q;
+        const R = r.mu * Q + 1500;
+        rate[p * nT + l] = R; rdA[p * nT + l] = r.phi * Q;
+        if(lastG[l] >= 0){
+          if(R > hiR[l]){ hiR[l] = R; hiGi[l] = lastG[l]; }
+          if(R < loR[l]){ loR[l] = R; loGi[l] = lastG[l]; }
+          if(!out.hi[f] || R > out.hi[f].r) out.hi[f] = {r:R, gi:lastG[l], y:y};
+          if(!out.lo[f] || R < out.lo[f].r) out.lo[f] = {r:R, gi:lastG[l], y:y};
+        }
+      }
+      for(let q = i; q < j; q++){ const gi = idx[q]; out.dH[gi] = chg[loc[D.h[gi]]]; out.dA[gi] = chg[loc[D.a[gi]]]; }
+      const t0 = D.ty[idx[j-1]]; if(t0 === 0 || t0 === 1) rsEnd = p;
+      p++; i = j;
+    }
+    // last period that contains a regular-season / Cup-group game
+    out.total.n += met.n; out.total.ll += met.ll; out.total.br += met.br; out.total.acc += met.acc;
+    out.seasons.push({y:y, g0:sn.g0, g1:sn.g1, teams:teams, nT:nT, days:Int32Array.from(dayList), rate:rate, rd:rdA, startRating:startRating, startRD:startRD,
+      entered:entered, left:left, shift:shift, newRating:newRating, hca:P.hca, sd:P.sd, hiGi:hiGi, hiR:hiR, loGi:loGi, loR:loR, met:met, rsEnd:rsEnd,
+      endRating:Float32Array.from(teams.map(function(f){ return mu[f] * Q + 1500; }))});
+    prevActive = teams;
+    if(onProgress) onProgress(si + 1, D.seasons.length);
+  });
+  out.state = {mu:mu.slice(), phi:phi.slice(), vol:vol.slice(), prevActive:prevActive.slice(), stat:stat, hi:out.hi.slice(), lo:out.lo.slice()};
+  return out;
+}
+
+// ==ENGINE END==
+const HIST_DATA={"fr":[{"k":"ATL","l":"A","c":["#E31837","#5091CD"],"e":[[2008,"ATL","Atlanta","Dream"]],"cur":true},{"k":"CHA","l":"B","c":["#00A9A5","#6A2C91"],"e":[[2002,"CHA","Charlotte","Sting"]],"cur":false},{"k":"CHI","l":"C","c":["#5091CD","#FFD520"],"e":[[2006,"CHI","Chicago","Sky"]],"cur":true},{"k":"CLE","l":"D","c":["#0A4A8F","#E87722"],"e":[[2002,"CLE","Cleveland","Rockers"]],"cur":false},{"k":"CON","l":"E","c":["#F05023","#0A2240"],"e":[[2002,"ORL","Orlando","Miracle"],[2003,"CON","Connecticut","Sun"]],"cur":true},{"k":"DAL","l":"F","c":["#002B5C","#C4D600"],"e":[[2002,"DET","Detroit","Shock"],[2010,"TUL","Tulsa","Shock"],[2016,"DAL","Dallas","Wings"]],"cur":true},{"k":"GSV","l":"G","c":["#8F6BD6","#111111"],"e":[[2025,"GS","Golden State","Valkyries"]],"cur":true},{"k":"HOU","l":"H","c":["#C8102E","#0B2A6F"],"e":[[2002,"HOU","Houston","Comets"]],"cur":false},{"k":"IND","l":"I","c":["#002D62","#FDBB30"],"e":[[2002,"IND","Indiana","Fever"]],"cur":true},{"k":"LAS","l":"J","c":["#552583","#FAB231"],"e":[[2002,"LA","Los Angeles","Sparks"]],"cur":true},{"k":"LVA","l":"K","c":["#1A1A1A","#C8102E"],"e":[[2002,"UTA","Utah","Starzz"],[2003,"SAS","San Antonio","Silver Stars"],[2014,"SAS","San Antonio","Stars"],[2018,"LV","Las Vegas","Aces"]],"cur":true},{"k":"MIA","l":"L","c":["#F26522","#C8102E"],"e":[[2002,"MIA","Miami","Sol"]],"cur":false},{"k":"MIN","l":"M","c":["#236192","#78BE20"],"e":[[2002,"MIN","Minnesota","Lynx"]],"cur":true},{"k":"NYL","l":"N","c":["#6ECEB2","#111111"],"e":[[2002,"NY","New York","Liberty"]],"cur":true},{"k":"PDX","l":"O","c":["#D1342F","#1A1A1A"],"e":[[2026,"POR","Portland","Fire"]],"cur":true},{"k":"PHX","l":"P","c":["#3C286E","#E56020"],"e":[[2002,"PHX","Phoenix","Mercury"]],"cur":true},{"k":"POR","l":"Q","c":["#B5121B","#1A1A1A"],"e":[[2002,"POR","Portland","Fire"]],"cur":false},{"k":"SAC","l":"R","c":["#5B2C83","#A6A9AB"],"e":[[2002,"SAC","Sacramento","Monarchs"]],"cur":false},{"k":"SEA","l":"S","c":["#2C5234","#FEE11A"],"e":[[2002,"SEA","Seattle","Storm"]],"cur":true},{"k":"TOR","l":"T","c":["#7B3F98","#00A19C"],"e":[[2026,"TOR","Toronto","Tempo"]],"cur":true},{"k":"WAS","l":"U","c":["#002B5C","#E03A3E"],"e":[[2002,"WAS","Washington","Mystics"]],"cur":true}],"g":{"2002":"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","2003":"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","2004":"ggcMS2d2gRggdHB1o1hRggdNI1v1xRggePE1t1mRggeBU1z1wRggeFK211oRggeMR1x1pRggeJS1v2lRggfHN1q1wRggfUI1w1vRgghHE1w1lRggiFN1g1sRggiMK181kRggjJE212aRggkIB151rRggkUM1q21RggkRK1r20RggkSP242cRgglJF1r1oRggmRH1l1rRggmNM1w1sRggoNB1r1hRggoIK271oRggoHP1r21RggoSJ1y21RggpUF1t1rRggqJR1f1wRggqBE1q1zRggqKM1b1jRggqNH1z1qRggqPS1920RggrEU201rRggsJH1z23RggsBI1l1yRggsPM1w24RggsNK1q1lRggsSR1t1rRggtFE2221RggwEP1n23RggwFI2b27RggwKH1b1nRggwBJ1w2aRggyFU221oRggyIN201wRggyBP1n1fRggyES1r1wRggyMJ1j1xRggzIF1w20RggzHK1x1uRggzER2b24Rgh0NU1o1qRgh1EJ2224Rgh2KB1l1nRgh2SN2e1qRgh3RI1e1rRgh4KU1o24Rgh4RM1o1eRgh5BE1r1mRgh5SH1x1rRgh5JP2422Rgh6FR2c22Rgh6NI1t1yRgh6HM1m1uRgh6SK221pRgh7JB1r1wRgh7UE1t23Rgh9UF2620Rgh9JN1t1dRgh9EI1r1mRgh9MP1a1xRgh9HS1r1lRghaFB1t1oRghbMK1l1yRghbNP1o20RghcFE1v1zRghcJI1v1zRghcHR1j1pRghdIB111aRghdKP2820RghdNS1v1qRgheUH1v20RgheEF2220RgheJM2b1vRghePR1l1rRghgIF1x1wRghgPK251tRghgNJ1t1xRghhUE1x26RghhHM1e1mRghiPB1z1nRghiIU1s1xRghiNR1b21RghiKS1g24RghjKJ282fRghkPI1o1pRghkFM1y26RghkBH1q1jRghkRS1p23RghnIE2527RghnHF1r2aRghnRN1u21RghoSU1x20RghoPJ1z21RghpSB1v1yRghpMI1k1mRghpUN1z1iRghqRE2d1yRghqPM1n1pRghqJK1u1pRghrSF1t1yRghrUB1t1vRghrJH1n1kRghsPN1x25RghsEI1t1pRghsRM212bRghtRF1v1fRghtKS1n23RghvEM1r1uRghvHI1q1yRghwBU1i1wRghwSR1u1rRghwMN1x1uRghwFH1p2pRghwEK1v26RghxFI212dRghyEH1k20RghyUS2b2dRghyRJ271yRghzKF1z25RghzBN1m23RghzMP1r1oRghzUR1z29Rgi0IJ1f2aRgi1NB2822Rgi2EF261wRgi2KP1j2fRgi2UJ242oRgi3IS1i1nRgi3ME1w1gRgi3PR1z1xRgi4MU1p1tRgi4BF1h1rRgi4HJ1v1yRgi5KE1j1xRgi5UB151yRgi5FN1x26Rgi5IP1k1zRgi5HS1r1vRgi6IR1q1zRgi8SH1j28Rgi9FU211tRgi9BI1r1hRgi9KM1h1uRgiaJR2d28RgibEU1w1xRgibNF272gRgibSM1y1jRgibPK1w1nRgicIH1i1qRgicEN1u28RgicJK271vRgicBR1p1qRgidPU1q2aRgidMF1n1mRgidBS1j2fRgj8EB1j1qRgj8IU231mRgj8PF1r1mRgj8MH201sRgj8KJ1x25Rgj8RS211tRgj9BN1g1kRgj9KR1s1uRgjaNE171pRgjaIM1x1pRgjaPH1y1oRgjaSJ292aRgjbFB1u1mRgjbUI161xRgjbRK281yRgjbSP1j1rRgjeRU1r1vRgjfBM201wRgjfJP1m20RgjfFS1v2eRgjgRB1x22RgjgNU1n1zRgjgHK2025RgjgFJ1r29RgjhEN251uRgjhKI2a1tRgjhSM1p1sRgjiMB1e1oRgjiFP2820RgjjHU1r23RgjjSE1s1zRgjjRJ1g1tRgjjKN1q1sRgjkSI241yRgjlNF1z2aRgjlMH1n1yRgjlPJ1o21RgjmEB291vRgjmUK2c21RgjmPS1m21RgjnIN1z25RgjnRH1z1qRgjoNE1x1uRgjoBK1t2aRgjoUP221vRgjoMJ261uRgjpHR1c1wRgjpJS2b28RgjqIE1o28RgjqBF1i1wRgjqUN2327RgjqHP1s26RgjqMR1r20RgjvNF231qPgjvJR1g20PgjwEU1n1vPgjwSM1y1mPgjxFN241uPgjxRJ1l1zPgjyUE1y28PgjyMS1i1sPgjzFN1s1uPgjzRJ211mPgk0UE1k24Pgk2EN1p1fPgk2SR2022Pgk4NE1l1oPgk4RS1i1uPgk6RS1q2aPgk9SE1s1wPgkbES1t1vPgkdES1o22P","2005":"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","2006":"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","2007":"haqRF1w23RhaqEU2h28RhaqMI1s2bRhaqKP2029RhaqHS1x2aRharCN1z2bRharRM221sRhatMF232dRhatRU1y1gRhatJC291sRhauEK1z22RhauPS2f2sRhavUN2429RhavJI1y2bRhawCM2a25RhawSK1z2aRhawHP2d33RhaxJE2g1wRhb0IM2h23Rhb0KH2a1zRhb0RP2324Rhb1UF272mRhb2PK2p2dRhb2EC2u2pRhb3CU231yRhb3NM1y1oRhb4PE1v24Rhb4FH251zRhb4JR2d2gRhb4KS261wRhb5PN2a2bRhb5UI1u1yRhb5MC2026Rhb7IN1v26Rhb7KR1l22Rhb7MP2i2dRhb8HI1n2cRhb9CP1u28Rhb9SR2029RhbaIU221xRhbaFN1v1lRhbaEH2g25RhbaMJ2f2iRhbbCK1y1oRhbbPR221yRhbbMS242iRhbcFE2722RhbcNI1p28RhbdRH2a1vRhbeUN1x27RhbeSC291xRhbfSI1q2iRhbfPU1y2eRhbfEM2125RhbfHJ1z22RhbhPI2h26RhbhJU2h28RhbhEF2023RhbhNC1u21RhbhHS1z2cRhbiIF251vRhbiJM1m2bRhbiNK1z27RhbiHR1r23RhbjCE2f22RhbkFJ2721RhblRC1i1gRhbmNE2421RhbmMK2128RhbmJH1s22RhbmUP2y2tRhbmFS2f1zRhboEI2622RhboKN1y1rRhboSM2426RhboUH2d2nRhboFP2f2cRhboRJ2g2oRhbpKE1z1mRhbpUC2r2eRhbpFR232dRhbqIN221rRhbqHP2d2iRhbqSJ2b1zRhbsUE2j23RhbsKH1v23RhbsNR1a1nRhbsCS242mRhbtEF2225RhbtRJ1u22RhbuSH2429RhbvFU1s1tRhbvIE1v20RhbvMK251uRhbvCR2k2cRhbvNJ281wRhbwPH2k23RhbxIU1x1qRhbxKF1z1wRhbxMR1w24RhbxNS1h2cRhbxCJ221zRhbzKU2c27RhbzPM2n27RhbzJS1z2iRhc1IJ1l1kRhc2NF2a29Rhc2RM2d28Rhc2SH1z1jRhc2EP3133Rhc3SK2128Rhc3UC2521Rhc3EJ322hRhc4RN1p1zRhc4PF2a33Rhc4CI1y2eRhc4HM271vRhc6SJ2a1bRhc6CF2c2kRhc6MU2b2jRhc6IH2725Rhc7ES241rRhc7KP2f25Rhc8MH252fRhc8NI1r27Rhc8FC261tRhc8ER2a26RhcdME272cRhcdSP272hRhcdKJ1r1pRhceHU1m1tRhceNF2a2fRhceCI2223RhcgFI2h28RhcgSE1m24RhcgHN2822RhcgUM2j2fRhcgRK1z29RhcgJP2f25RhchUF1m1uRhchIC1t1wRhciSN2523RhciHE2729RhciKC2a2cRhciMP2l2yRhckKI1z1rRhckSU2o2pRhckFE2k2gRhckJR1n1vRhclPM2v27RhcmIR1e1oRhcmNE2327RhcmCF2b21RhcnJM242dRhcnHK1x1rRhcnPC2q2oRhcnIS232hRhcoFU241sRhcpEN1v1pRhcpJF2123RhcpHC1y2gRhcpIP2328RhcpMR2621RhcpKS2k2gRhcrUI1l1uRhcrCE1k22RhcrJN211rRhcrFK2c27RhcrPH2422RhcrRS2622RhctMN1u1zRhctPK2c27RhcuNU1w28RhcuJH1k1uRhcuFC1u1oRhcuSR242aRhcvIE1n2cRhcvHM2825RhcvJK1v2eRhcvPS2t33RhcwCU1u1zRhcwRI1j1rRhcyUK2521RhcyRE2927RhcySM222nRhcyIC231yRhcyNH251zRhcyPJ2o2lRhd0SF1y2pRhd0RK1p20Rhd0NP2e2pRhd0UJ2823Rhd1RH232bRhd2IF1x22Rhd2HK1o1rRhd2EC2g1uRhd2JP2b2sRhd2US1w2jRhd3FN2c2dRhd3UR2a2eRhd3MJ282hRhd5EU1s1tRhd5HF2921Rhd5NC1t25Rhd5MS1v29Rhd5KJ2c25Rhd6EI2522Rhd6KR2229Rhd7NU2120Rhd7FM252fRhd7CH291yRhd8EN1u22Rhd8IK1n1jRhd8PR2t2jRhd8JS252pRhdaUE2422RhdaCN1g1mRhdaFI1u20RhdaKM1j29RhdaRP212fRhdaHJ2a20RhdeIE2g2lPhdeKR1t2ePhdfFN1f21PhdfPS2t2cPhdgRK1p2ePhdgEI1n26PhdhNF2124PhdhSP2h2nPhdiEI2g2lPhdiRK2628PhdjNF1y1zPhdlPK2u2sPhdmFI1t23PhdnKP2k2qPhdoIF1r25PhdpIF1t29PhdrPF2s30PhduPF2q1yPhdxFP2g2bPhdzFP2425Phe2PF302kP","2008":"hkuHF1u2dRhkuJP2r2mRhkuAE1v2sRhkuUI1h1sRhkuKR1s21RhkuCS1p1vRhkvEN251rRhkvFM1y2cRhkxPK2429RhkxRS1q22RhkyIF1z24RhkzUN1o27RhkzRC252fRhkzSP2f2bRhl0FA2g24Rhl1SK202fRhl1RE1s2fRhl2JA221kRhl2HU1u1xRhl2NF1q20Rhl4AU2228Rhl4IE231aRhl4MH2q2kRhl6JI262aRhl6MC231xRhl7NE2c2hRhl7HR1u21Rhl7KS1l26Rhl8JU1y1nRhl8FI221tRhl8PM2b2mRhl9EC2321Rhl9HS1r1sRhlbMA2d29RhlbSN1r25RhlbJC2925RhlbKH2023RhlbUP2l2qRhlcSF1v25RhleME2526RhleHN2129RhleCA2e20RhleUK1g1rRhleFR2c1yRhlePJ2d27RhlfHI232cRhlfAC1y2jRhlfFS1v23RhlgUE272fRhlgRN1y1rRhlgKM262iRhliEM231uRhljRU2724RhljNA2925RhljIK1h1sRhljPS252bRhljFJ2128RhlkRM2a26RhllIA241vRhllSK1x22RhllUC1s1lRhllEJ2l2qRhlmFP2h27RhlmMN2425RhlmSH1o1wRhlmJR221uRhlnKI1y1oRhloAH272gRhloES221vRhlqNI1x2bRhlqKA291uRhlqUH1v1rRhlqEP292uRhlqCJ1v28RhlsAU1p20RhlsMF2l2qRhlsJK2325RhlsCP2x34RhlsER201kRhlsIS1y26RhltHM201tRhluFA2p24RhluPN202xRhluCR1y2aRhluIJ1r25RhlwRI2126RhlwPU2q2iRhlwFE1w2dRhlwNM1x2jRhlwHK2a29RhlwSJ1q24RhlyIN2o2uRhlyEF1p1yRhlyRM2428RhlyKH1z25RhlyPC2h27RhlyUJ2522RhlzAE2t31Rhm0MK1t21Rhm0FC1n24Rhm0IH1p23Rhm0NR262aRhm1PE2f28Rhm1AF2k2sRhm1US1d1sRhm3NJ2h26Rhm3HE1w26Rhm3PA2p27Rhm3CM211zRhm3FK2027Rhm3UR292fRhm4CI1v22Rhm5HA201tRhm5RK1v1wRhm5NS1z2cRhm5MJ2g1yRhm7RH1t21Rhm7EI2229Rhm7CA2c2jRhm7NP2l2bRhm7MS1z2oRhm8KU2b23Rhm8PJ282jRhmaHP2m2rRhmaIU1c1eRhmaEF2a2gRhmaNK272bRhmaSR271sRhmbAM211vRhmbHJ222aRhmcPS262hRhmcKC231vRhmcJR1x2fRhmdUF1u27RhmdAK222aRhmeCI1l1uRhmeFN1s22RhmeHM1z2dRhmePR2p2xRhmeJS1g1yRhmfEU1s1xRhmfAC1u27RhmgKJ1q23RhmhNE251zRhmhKP2p2fRhmiCF1r1uRhmiAI2925RhmjMH2g2oRhmjUN1k25RhmjJP2k2rRhmkSI1t1nRhmkFU2r1qRhmkEC1t21RhmkAR2125RhmlIN1z1jRhmlMK2f22RhmlJH2023RhmlAP2c32RhmmCE1v22RhmmSU1l2hRhmmRF2g2dRhmoRA271uRhmoSM2421RhmoJF2c29RhmoIC1o1wRhmoPH2k2mRhmpNU2821RhmqCK1v26RhmqPR222bRhmqMI2c28RhmqJE1p2fRhmqFH1p27RhmrJN1w1xRhmrUA2923RhmrKM1w26RhmrSP282mRhmsCH1t27RhmsIR1q1yRhmtNA2e24RhmtEU2a1oRhmtKF241sRhmtJM2k2cRhmtIP2g2cRhmtRS1z25RhnpEI2c1mRhnpCN1x1oRhnpKP251jRhnpHS1d1uRhnpRJ1r26RhnqCU2723RhnqNF1x2bRhnqEA2q20RhnrAI202fRhnrUM262kRhnrHR1t28RhnrKJ1h1mRhnsSE2428RhnsFC292aRhntMJ1m2aRhnuIU271wRhnuSA2b1xRhnuNH2i2fRhnvMP2o2vRhnwSC1y1qRhnxCE2328RhnxIF1w2iRhnxAN1z2aRhnxJK1m24RhnxRP1x29RhnyFU2c1xRhnyJH2c1uRhnyMS2g2oRhnzCN1p1xRhnzKE2d21RhnzHP222rRhnzMR1z26Rho0IA2925Rho1PF262hRho1KN2a24Rho1IM242eRho1UC1n26Rho1EH1w23Rho1SR2225Rho3NI1n22Rho3UF1u26Rho3EK2226Rho3AJ2b20Rho4PM2o2fRho4NC1x1qRho4AS2025Rho5UE292fRho5RK1x25Rho6PI2h2vRho6FN1p1nRho6MU2o1yRho6HC2724Rho6SJ1c1tRho7RH292iRhoaEN1r20PhoaKR2d26PhobFI2920PhobSJ1x25PhocNE1y21PhocRK2c1vPhodIF2h2aPhodJS1e1sPhoeNE1u1qPhoeRK292ePhofIF1p28PhofJS1z1sPhohKJ1y2dPhoiFN1k1oPhojJK1u1vPhokNF1j1sPhokJK2024PholNF2123PhonFK251xPhopFK1x1pPhorKF1o24P","2009":"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","2010":"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","2011":"ifqMJ222aRifrPS1z26RifrCI1l1tRifrUE212hRifrCI1l1tRifrFK212lRifsNA2m2gRifsJM1x2eRifuFM1t23RifwUA2q2iRifwMS2922RifxNI2928RifxKF2l1qRifxEC2326RifxPJ2c2qRifyIN2e28RifyCU2c25RifyAK222eRifzFE272iRig1FI222aRig1AN271mRig3EU271zRig4AM2d2oRig4NC212dRig4KP2t2rRig4IS1i1wRig5UF1n25Rig6CE1w2bRig6MA251sRig6IP2h2lRig6SJ1e22Rig8CA1w1zRig8IU2h28Rig8SF2a25Rig8PK2x2qRig8NJ2j2oRigaNF2m2aRigaEC2t2zRigbPA2k2bRigbJK282iRigbMS1j1tRigcEI1y23RigcPC2e26RigdKA2k2eRigdJN1v25RigdFU1r2bRigdIM2623RigfPI2e2jRigfJE2427RigfKC2c22RighNA292fRighMF2t1zRigiKN2329RigiSE1y23RigiCP2c2pRigkSU211rRigmSI1p26RigmUC1t26RigmJP2a2tRigpPF2e26RigpNK2421RigqUI1l1wRigqEM1v2iRigqAC1x29RigqJS282rRigrCN2128RigrFP1r2uRigtUS1z27RigtJK2c22RiguAN1x2jRiguFC1i20RiguEI262iRiguPM342xRigvSK1u1xRigwMI281yRigwEN1w1nRigwJF2722RigwUP1s26RigxCA1w24RigxSM1q1xRigyFN1l2gRigyIE1z24RigyUJ2h2dRigzKJ271xRih0IA222cRih0SC1x26Rih0NE272dRih1AU2e27Rih1MP2y2qRih2CI1r25Rih2KS1j21Rih7KU211vRih7AF241wRih7JM202dRih7EC251uRih7SP2b25Rih9PK2j2uRih9UN1z23Rih9JA282hRih9IE1x1mRih9CF1s1jRihaIU1p1nRihaSM1v2kRihbPN2j2cRihbSF2h20RihbJC2g2cRihcMK1y1xRihcAE2k2rRihcJI1r2qRiheNA2d23RihePM212iRiheKS1s26RihfEJ271yRihgCN1d1nRihgKM1o1qRihhIF2d1tRihhES2729RihiNU292jRihiFK1s20RihjSA1h1yRihjEP2o2nRihjIC1x2gRihjMJ2c26RihlKI1w29RihlAU201yRihlCE1m1xRihlSN1k1mRihlMP282dRihlFJ1u1zRihnKE201nRihnAP2n31RihnFS1r25RihoNU1r1sRihoMC2724RihoPJ2i2lRihpNI1z2aRihpUE232aRihpAS2k1rRihqCK2d21RihqFM1i2aRihsUN1u1xRihsME2730RihsIK1t1rRihsSP2729RihsAJ2c27RihuEN292cRihuMU291qRihuIJ1y23RihvEA2g2mRihwCU1z1yRihwJM1w2fRihwKP292fRihwNS1q1rRihxAE2f2oRihxUI1f2bRihxJF211vRihzJU2e2aRihzMF2620RihzAC2b28RihzNP221yRihzKS1j1rRii1FS1l22Rii2PE2k2nRii2KM232dRii2UC1v28Rii2FJ2523Rii3AI2e28Rii4MK201pRii4EF202bRii4PU2e27Rii4NC2122Rii4JS1r1tRii6CN1v1zRii6IA2i2kRii6PF2o22Rii6UM1k21Rii6EK1u26Rii6SJ1q1wRii8AU292dRii8PK1w2eRii9IE1j2bRii9UA212nRii9SF2620Rii9NM261qRiiaSK1y1oRiiaJP252lRiibFA1g21RiibMN2e1wRiibEU271cRiibIC2g28RiidEA222dRiidKJ2a1tRiieUI1x2fRiifCM1x26RiifFP242jRiigIN232bRiigPS1y2dRiigFJ212cRiihUK222aRiihCJ1v22RiiiNE1r1xRiiiAI2l2gRiiiMP2o2iRiiiKF2u2mRiiiCS1y29RiimNI2022PiimPS1p28PiinAE2h2cPiinKM1t1uPiioIN202fPiioSP2b2kPiipEA1s1xPiipMK232cPiiqNI1q20PiiqPS2523PiirKM1v2dPiitAI222aPiitPM1v2nPiiwIA252mPiiwMP2v2ePiiyAI2b1vPij3AM222gPij6AM2n2tPij8MA211vP","2012":"ipgJS201uRiphEN2621RiphAI2c2kRiphCU1x1lRiphKF2g27RipiPM2b2xRipiNE252kRipkMN281qRipkPF2h2fRipkSJ1p22RipmJM2c2kRipnKE272bRipnNA222sRipnIC2b20RipoFU1p1sRipoJP2r2gRippIA261qRippSM1z2cRiprFJ2324RipsMU2725RipsCK251rRiptPA1t29RipuME2d20RipuPK1u2dRipuUC1r1tRipuFS1m24RipvNI1w2jRipvCA2m2kRipwUE2e2mRipwIN202fRipwFP2027RipwKM272bRipwSJ1t1vRipyAN2227RipzSM1j27Riq1EI2h29Riq1NU241yRiq1KA1l1oRiq1FC2j2qRiq1PJ222iRiq2MF2l21Riq2SK1v28Riq3CN211sRiq3AE212kRiq6JE2f29Riq6SC1m22Riq8IU1u1vRiq8NE1j2pRiq8JA1n2kRiq8SF2e21Riq8MP261oRiq9CI1y2cRiq9JK2d2qRiqaEA2321RiqaPF232fRiqaMS1q1tRiqbUJ1y2tRiqcIE2d2gRiqcNA211oRiqdUP2528RiqdFJ272nRiqeEI1p2nRiqeNM1y2uRiqfKS242aRiqgCM1v27RiqgIF211yRiqgJP2l2cRiqhAN221sRiqhUS1j20RiqhKJ2j1zRiqjIA1m1yRiqjSU271zRiqjJF232jRiqkIC2920RiqkPM282oRiqlJK282mRiqmEU251sRiqmAF2u2kRiqmPC2c29RiqnSN1n25RiqoMK2c2lRiqoPU252iRiqoSE2h2bRiqoAC1x1zRiqqPK292aRiqsMJ2i2oRiqsKI2g20RiqtKU2621RiqtEF2e23RiqtNC1s1nRiquCI2e2gRiquEM2e28RiquSJ1n2bRiquAP2s2lRiqvUF1q26RiqvKN2m29RiqvAJ1r27RiqvPS1w2bRiqxEU251yRiqxNI2a2cRiqxMF2z2eRiqxJP2i1zRiqyKC251wRiqyAS1y1nRiqyUE212dRiqzFM222hRiqzJI2522Rir0UN1y1hRir0AK1y2jRir0EC2826Rir0SP2b1sRiryUI1u2cRiryEN1u27RiryPS1m20RirzKF2h27RirzUM1x2qRirzAC2a24Ris0AI202eRis0NE222dRis0JS2a1zRis1CU1z23Ris1KP2h1bRis1FM1n2bRis3FE282aRis3UK2023Ris3NC251vRis3MS2e21Ris3IJ1x27Ris4CA1z2aRis5NP2h25Ris5IS1w1uRis5KJ252tRis6AU291xRis6CF2629Ris7MA2c22Ris7FK1z2jRis7IP2d20Ris7NJ1q2fRis8CE2a1yRis8NS1u2cRisaUI1w2bRisaFA2c28RisaKM2c2oRisaEC2b20RiscIN241rRiscUA1n2aRiscJF2d2rRiscEK2c21RiscPS231wRisdFM2b2kRiseUN2127RiseCI1s29RiseKP2i2mRisfEA282fRisfJC222dRishEU251yRishJM252gRisiPN1n2fRisiIA1s1zRisjFS222tRiskJU2o1wRiskPE2j2aRiskCN2k2bRiskAM2l2pRiskIK2a26RislSF2h1uRismMK291qRismUA1w2lRismJN1z21RismCE252aRismPI2b2hRisoSA1p25RisoMC1y2bRispSI1c20RispUN1q23RispKF261vRispEP2s26RisqCJ252eRisrMI1u1sRisrAU2a22RisrSK1u2iRisrFP2k2cRisrEJ2a2lRistFK281yRistNU231wRistCP2e1jRistES1o1mRisuIM272eRisvNK1u25RisvCS1o23RisvPJ242tRiswIE1v21RisxNF1u26RisxAC231uRisxMJ242kRisyIU1u1hRisyMP2h1uRisyKS232cRiszFN222jRiszUC1m25Rit0SP1z1lRit0MK2c2rRit0FI1m2jRit0AE202kRit4NE1o1tPit4KJ2e2lPit5AI231uPit5SM1y26Pit6JK2t2mPit6EN231qPit7IA2v2gPit7MS272ePit9AI1s23Pit9SM2021PitbJM252mPitcIE1s24PiteMJ2827PitfEI2426PitiIE2f1zPitlIM241yPitoIM1z2bPitqMI1n24PitsMI262fP","2013":"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","2014":"j9oNE231iRj9oMU2h25Rj9oKA2327Rj9oIC1z22Rj9oJS281xRj9pAI2i2gRj9pCN271tRj9pFK2428Rj9pSP1s29Rj9qEM2f2iRj9qPJ221xRj9tEC1w26Rj9vSE1n1zRj9vUI271rRj9vMF2m2lRj9vKP2622Rj9wSU211tRj9wAC212fRj9wNM2a2fRj9xKJ1q2bRj9xIA2a25Rj9yMC2320Rj9zSN1s1yRja0FK272aRja1EI1t27Rja2NU1o1wRja2SA1x28Rja2KM202gRja2EC2a2tRja2FP262sRja3NI1u1yRja4AE242dRja4JU2c2kRja4MK2f27Rja4FS1o1qRja6JA2d2lRja6SP202fRja8UE221uRja8KN2f23Rja9IU1s1pRja9PF262mRja9JC2u2gRja9MS1q1tRjaaCA1n2pRjaaIE1z2gRjaaPK2j27RjabUN1s29RjabMJ2d20RjadNF1l20RjadPU291uRjadSC2824RjaeSI1w24RjafPE2n2oRjagCU1w27RjagMA2a2dRjagEN2b23RjagSK2720RjagJF1v1xRjahJK222tRjaiPM2820RjaiNE2024RjaiAU231vRjaiSF272dRjakIE1v2hRjakMJ2m25RjalUA212bRjalNC2s2xRjalMP272kRjamKS2f2aRjamFJ252fRjanNA1s2dRjanUM1t23RjanIC2b23RjanFP282jRjapFC2x2rRjapAN262dRjapKJ201xRjapIM252bRjapUS2e2hRjarUK291yRjarSJ1l1tRjasCE1x27RjasFI2z2uRjatAK2927RjauPI2924RjauEU1r1xRjauCN211xRjauMS1z29RjavJF2k2hRjawEN1t1vRjawKU211tRjawPF2825RjawAI241wRjawSM1x22RjayKE221zRjayFN222iRjayIA251yRjayCJ2i2bRjazIU2825RjazCP1x2fRjb0FE2o2bRjb0KM2c2jRjb0JS1y1kRjb2KI1z1yRjb2UA212eRjb2EF2624Rjb2CS2128Rjb3MN282fRjb3PJ2m2hRjb5EA1z2bRjb5IF2624Rjb5JM202bRjb6UC201tRjb6SP1m26Rjb6NK1u28Rjb7EI1w20Rjb7MF2j2dRjb8JN1w1iRjb8SK2g1vRjb8PC201uRjb9AI2l22Rjb9UF2j22RjbaJE2i1sRjbaSM1o25RjbaKP1p2iRjbaCA2729RjbcES2e1rRjbcJI2e26RjbcUP262iRjbdAN2325RjbdFM2a2lRjbeKF2i2nRjbeCI1s2aRjbeEP2d2tRjbeUJ2723RjbjIC1l1oRjbjFK2l2nRjbjAM3034RjbjPS2h1zRjbkEU232hRjbkNJ1u1sRjblNS2c28RjblPJ2l21RjbmFU252aRjbmCA2723RjbmKM262gRjbnJS251xRjbnIK231wRjbnNP1r26RjboME241tRjboAU1v25RjboCF1x27RjbpIJ2125RjbqEA282hRjbqUN2428RjbqCK222kRjbqSF2228RjbqJP1x2iRjbsNC222fRjbsPM1v23RjbsAF2d23RjbsIS241vRjbtEK2h27RjbuMF2c23RjbuIP1x27RjbvNA2b24RjbvEJ1x1yRjbvUC1t24RjbvKS1t1zRjbxCE2a1uRjbxMI1u1sRjbxNU1a27RjbxAP1v23RjbxFJ2o2iRjbzCM1s22RjbzPK2621RjbzAS1w2gRjc0UI221pRjc0EN1u1zRjc0KF1q27Rjc0AJ2528Rjc1MP282aRjc2IN2i24Rjc2UE292hRjc2JK242aRjc2AC1x28Rjc2FS1w22Rjc4PN241sRjc4JM1z1rRjc5CU201xRjc5PA2a2oRjc6NI1r24Rjc7UE1z1vRjc7FA242kRjc7MK242kRjc7SJ1t25Rjc8CI1v1zRjc8NU211pRjc8FM1r28Rjc8JP1x24Rjc9AE1j2cRjc9KC2c20Rjc9IN1p21Rjc9PS261tRjcdUI2126PjcdKM2c2gPjceCA2825PjceJP2023PjcfIU2924PjcfMK2m2hPjcgAC2k2bPjcgPJ2l1wPjciCA2928PjclMP1z2dPjcmCI1y25PjcnPM252aPjcoIC2c2ePjcpMP262oPjcqCI231qPjcuCP1q2bPjcwCP1w2pPjczPC2f2aP","2015":"jkdUE211wRjkdAN212aRjkdFM232bRjkdIC202nRjkdKP1z24RjkeNU1q1vRjkeMI261xRjkeCF2l2tRjkeJS1p2eRjkfEA231yRjkhIN272eRjkhSF191wRjkjCE1t1vRjkjPN1l1wRjkjKA1x20RjkjSM1y2mRjkkAU1s1pRjkkPI2225RjkmCI2q20RjkmAE1s2aRjkmMP1u29RjkmFK211qRjkmSJ1o1iRjkmUN221nRjkoIA2i27RjkoKF1p2gRjkoES271mRjkoMJ1v1gRjkrFU2e2aRjkrIN281rRjkrCA2122RjkrMK221nRjkrEP2i26RjksUI2f23RjksCK2n2fRjktNA211sRjktEJ241wRjktFM2e26RjktPS2c20RjkvJU282cRjkwAC2o2sRjkxPK1z24RjkxMS2421RjkyJE2428RjkyCI2b25RjkyUA1x20RjkyNF1q1zRjkzPM1k1zRjkzSK1z21Rjl0JN1y27Rjl0CU1z2eRjl0SF2h2lRjl2IE2k2cRjl2NC2h29Rjl2KP262dRjl2FS1x22Rjl4CE2522Rjl4UI1e21Rjl4FP1j2eRjl4KJ292eRjl5SM1l2aRjl5FJ2n2qRjl7SA1s20Rjl7PJ2m2jRjl9FA2d23RjlaSI1t2gRjlaJK1r1yRjlbNU2724RjlcKI242bRjlcMC2b2iRjlcPS2m27RjldJF1v2aRjleNA242cRjleEC242oRjleSP1o1yRjleKM1d1uRjlgME2d27RjlgAP1z28RjlhKN1w2cRjlhUC1l2dRjlhJS1p1wRjlhFI282bRjliAJ2420RjliEN1l1sRjljIU1e1wRjljCM1u2cRjljFK1m1tRjlkAS212eRjlkNP2321RjllMF2720RjllKC2a2lRjllEU2a2hRjlnUF241xRjlnIK1q28RjlnAC2k2pRjlnNS2925RjlnPJ1t1yRjloEM2625RjloNJ1n1hRjluIE2321RjluCP2f2hRjlvSU222fRjlvNI202cRjlvJM242aRjlvAK2d2uRjlwPF261uRjlxSE1u1vRjlxAM1y2eRjlxUK2g1hRjlxJC2g25RjlyMF2e28RjlzSN1q26RjlzPA1z1wRjlzJK2826RjlzEI1y2bRjlzUC1w1zRjm1KE1f2aRjm1IC2a2yRjm1FP2c2fRjm1MJ1p2bRjm2KU1r1uRjm3FJ1l2cRjm4UE202eRjm4AI252yRjm4NC251rRjm4MP1u21Rjm5SK292gRjm6PC1s22Rjm6EU212cRjm6AF2q2iRjm6JM1s20Rjm8CN1r2cRjm8IU211qRjm8KM242bRjm8SJ2d25Rjm9FE2228Rjm9SP1u2bRjmbNE2i26RjmbMA2c2aRjmbCS2m2cRjmcFN2924RjmdEA252iRjmdMU1x25RjmdCJ1s24RjmdIP231rRjmdKS1r20RjmfPF1n22RjmfIJ271wRjmgUM271pRjmgNK2119RjmiAN1v26RjmiEF242cRjmiMK261pRjmiUC2d2fRjmiJP261wRjmiIS231rRjmkCU1u1sRjmkJK2i1nRjmkAE2u2kRjmkNI2728RjmkMP1v27RjmmEA1l1zRjmnJI2927RjmoPE2928RjmpPU1r1zRjmpAI2i2cRjmpMN1w29RjmpJF1u24RjmpKS1x2bRjmqNE281uRjmqCA2q2oRjmrIF1y24RjmrKJ1g1oRjmrEC201wRjmrPM1p1zRjmrUS1n1xRjmtAN2328RjmtEI1f29RjmuUP1h21RjmvCN2a1oRjmvFS2d1vRjmvUJ2j2lRjmwIM1t29RjmwEK2120RjmxPK2a1gRjmyUA1v21RjmyFJ212kRjmySC1t2lRjmyNM231zRjn0IU2024Rjn0SM1v21Rjn0KF1s22Rjn1EN1s22Rjn1JA1o2iRjn3UN2a1jRjn3IA231vRjn3FC1z2kRjn3JP1t1yRjn3MS1s26Rjn5CE232eRjn5AU211zRjn5PF2f2jRjn5NI2429Rjn5KS1n1mRjn9IC2025Pjn9FP1j2gPjnaUN2e2bPjnaJM1t1vPjnbCI2a2hPjnbPF2j1vPjncNU2e1wPjncMJ1z29PjndIC2s2hPjneUN2227PjneJM282jPjnfIN1v2cPjngPM1o1vPjnjNI1s1yPjnjMP201zPjnlIN1u1fPjnqIM231xPjnsIM1z25PjnvMI2825PjnxMI1x23Pjo0IM1g1xP","2016":"jtxFI2i27RjtxNU2f24RjtxPM242nRjtxEC1y2lRjtxAK211rRjtySJ1u2oRjtyFN1z27Rju1MC2p28Rju1FU2f25Rju1PI2l2pRju2EK201wRju3JU2p1vRju3AI2d2mRju3SP2928Rju4JN2720Rju4UE2c24Rju4KF252aRju5CA292fRju5MS261zRju7AN2d27Rju7JC2l28Rju8MP2d26Rju9JE2520Rju9US2c2aRjuaIM1z22RjuaCK2627RjuaAF2u2lRjubES292lRjucIA242dRjucCF2k2fRjucUP252lRjueMN271xRjueEP2i2rRjufCU2e26RjufSI232dRjugKJ1p1wRjuhAE2b25RjuhIN1n2jRjuhUC202qRjuhPS292nRjuiFM1r28RjuiJK221pRjujIE2g25RjujUA2e27RjujNS2e26RjulPM292hRjulNJ252sRjumUF2f27RjunKP232iRjuoSE2425RjuoCI211sRjuoMA3226RjupMU2b24RjupNK2i23RjupJF2p21RjuqEA2f2lRjuqCP282eRjuqSI2i2gRjusUE312yRjusFN2g2jRjusIM1r2fRjusSK1y25RjusCJ2d2qRjuuNE2820RjuuSF272gRjuvCA2p2tRjuvIK2c23RjuvPJ1z25RjuwAU1t2nRjuwFP3933RjuxKE2i2lRjuxNI2623RjuxMS2o2cRjuzMJ201xRjuzKC2329RjuzPF2i2sRjv0NA2i27Rjv0IU1q24Rjv1KF2i2pRjv2PU2j27Rjv2CN2728Rjv2JM2m24Rjv2ES292qRjv3AK1x21Rjv3IF2k2fRjv4PN2w2pRjv4MU1r2fRjv4EJ2128Rjv6AS292cRjv6FJ2c2hRjv7KU1v2cRjv7IC2n2bRjv7NM2n2kRjv7EP232eRjv8AJ232cRjv8FS2b26Rjv9KI2f2dRjv9UC2c2eRjv9NP2r2gRjvaKM1w2jRjvaEF2e2bRjvbNJ1v25RjvbPA2n2fRjvdSA1s25RjvdCM2a2fRjvdPF2225RjveSN2226RjveUK1y25RjveIJ2g2mRjvfME2h2lRjvgFA2i2nRjvgNC2g2dRjvgSK261wRjvgIP261oRjvhFM1k2lRjviAE1v1rRjviKN1t23RjviPC2n2sRjviUJ2a2lRjviIS2l2aRjvkMK291lRjvlAN1q2eRjvlEI2e1sRjvlJC251vRjvlUP2226RjvnJE2q2kRjvnAI2026RjvnNM1y2gRjvnFC252cRjvnUS1f28RjvoKP1s2bRjvpEN242bRjvpJA222jRjvpMF2q2pRjvpCS2j2gRjvrJI2a2kRjvrCP2725RjvsNU2g29RjvsEF2h26RjvsAM1t2bRjvsKS1x2bRjvtIN2a1yRjvuJU2n23RjvuFA2g2lrjvuSM2027RjvuEC2m2hRjwtME282cRjwtNK2c25RjwtAC2a2iRjwtFP202qRjwtJS2027RjwuUI2k1xRjwvEA212fRjwvCF2k2dRjwvSM282kRjwvKU2d22RjwvJP1u1yRjwxKE1q2hRjwxPI271tRjwyFS1u26RjwzNI252qRjwzJK1y1pRjx0PE222fRjx0UM1x23Rjx0SC2g2kRjx0JF2f27Rjx1PN1y2kRjx2UF2g2bRjx2KC212pRjx2SA2j2aRjx2IJ292gRjx2EM272lRjx4PA2f2jRjx4IK1z1xRjx4MJ2522Rjx5SN2u26Rjx5CU293aRjx6AJ2e29Rjx7SU2924Rjx7CI2g2nRjx7EN2a2hRjx7FK2k2cRjx9CE2o2eRjx9IU2821Rjx9NF292cRjx9MK2924Rjx9AP232eRjx9JS1o26RjxbIE2f2hRjxbUN231qRjxbKA1z1vRjxbMC2p2qRjxbPJ2d2iRjxdUA2j2mRjxdSP1q2eRjxeFE222zRjxeMI2a23RjxeNC1w2kRjxeKJ1t1zRjxfAM2f2nRjxgEU2f26RjxgFI1o2bRjxgPK291tRjxgCS232gRjxjPI2h26PjxjSA2d2mPjxmPN2t2mPjxnAC2q30PjxqPM2n35PjxqCJ232npjxsPM2e2oPjxsCJ2c2rPjxuJC1u1yPjxuMP2a1vPjxwJC2n23Pjy1JM2624Pjy3JM1o27Pjy6MJ232kPjy8MJ2d27PjycJM2524P","2017":"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","2018":"kebFP262eRkecCI2a1sRkedKE1t2tRkedIU232aRkedAF262tRkedJM2524RkedNC2428RkedPS2f2aRkefJI2f1yRkefKU1y23RkegAC291rRkegFM1w24RkegSP2f1zRkehJE2m2uRkehUI2l2cRkeiMN2620RkeiCS2j2nRkejFA261yRkejIE252eRkekMU262iRkekPJ2028RkekSK2x2qRkemMA2224RkemFN2h2mRkemUS2529RkenUP2v2nRkeoKS222tRkepPM2n2dRkepEC3220RkepUK212dRkeqNI2f29RkeqSF2i2mRkerPA261zRkerEU2g1sRkerMJ1x25RkerKC2i2nRketPN2822RketEA252aRkevMU2g28RkevEN2g2eRkevSJ2g1rRkewAK2f2bRkewFI2h2bRkewCP272oRkexME232hRkeyIN2326RkeyCJ1n25RkeyKP1u20RkeyAS1v1sRkf0KI2t2kRkf0PF2320Rkf0CS2d2oRkf0AJ1s20Rkf1UE2n2jRkf1KN261rRkf2IA1v20Rkf3JU2p2eRkf3KF1v25Rkf3ES2k2vRkf4AI1s2oRkf4NM1z2dRkf4EP202hRkf5JC2920Rkf5PK2k28Rkf7AN2027Rkf7CU1o2gRkf7FM2b2jRkf7KS2h25Rkf7IJ1j22RkfaEA1y23RkfaJF202tRkfaUC2l25RkfaNK262gRkfaMP2b20RkfaIS1r20RkfcSF2p24RkfcNJ1i28RkfcEI2f26RkfcMK2g21RkfcPC2g2pRkfePN2b1xRkfeEU282kRkfeSM272jRkfeFJ2b2fRkffAC282lRkffIE2h2tRkffFK2p2jRkfgNU2528RkfgJS2029RkfhPI2n25RkfhCN2v2rRkfhAM222dRkfhJK262mRkfiPU2c22RkfjMF2420RkfjKJ1z2fRkfjAI2f2bRkfjNC2p2mRkfjES1y2cRkflSN251qRkflCF2d30RkflIM1z1nRkflEJ2120RkfnNU1v2eRkfnIF1r2iRkfnJM202bRkfnCK282cRkfnEP252cRkfoSA2n2eRkfpUJ2b22RkfpMC1r25RkfpEK2i2mRkfqPA1y24RkfqFN2p2fRkfqUS2j2pRkfsJS2523RkfsPF202tRkfsKC2q22RkftNE2724RkftAU2y2hRkftMI2f1tRkfuFJ2k25RkfvIA222qRkfvPE2f2jRkfvCU202gRkfvKM2d25RkfwFS2c2jRkfxUA2528RkfxCN2c2zRkfxPI2t2aRkfxJK2r26RkfxEM2b1sRkfzNF2f2wRkfzAE2e2bRkg0SC2t2bRkg0IM1t2hRkg1NA1w2aRkg1UF292iRkg1KP2d2aRkg2SE261tRkg2FC2r36Rkg2IJ2624Rkg3UN2n26Rkg3MP2823Rkg4SA222fRkg4EF2k23Rkg4IK222gRkg4JC2l24Rkg6UE1w2mRkg6SI2k20Rkg6NM2a2dRkg6AJ291zRkg7CP2t2fRkgdUA2e1zRkgdCF2k2jRkgdSP2u2jRkgeNE252kRkgePK2w2lRkgfFI262cRkgfMJ1l27RkggCA222hRkggMS232dRkghIN1w1jRkgiKE2g31RkgiUF2422RkgiPJ2326RkgiAM2e1uRkgjSN2o28RkgkKA2s31RkgkSI2m27RkgkMC2d1sRkgkUP2v2qRkglJN2a29RkglEF2t2kRkgmSU252sRkgmJA2127RkgmMK2h21RkgnEC2e2pRkgnIP222mRkgoFA2a2kRkgoIK222kRkgpAN2e25RkgpCE232aRkgpFU282lRkgpJP262eRkgpSM2920RkgrFE242oRkgrCM2j2gRkgrNJ1u22RkgsUI241qRkgsNK202dRkguME272oRkguJU1v1xRkguKF2u2zRkguAP2n2wRkguNS252dRkgvCI372yRkgwJE2e2hRkgwAK2l26RkgwNP2d2oRkgwIC2p2kRkgwFS1w2cRkgwUM2b2gRkgyFP2b2tPkgyMJ1w23Pkh0JU1s2oPkh0PE2o2ePkh3UA2f2cPkh3PS2f2jPkh5UA2326Pkh5PS2f2jPkh8AU2924Pkh8SP1u2ePkhaAU242pPkhaSP2c2ePkhcUA2e29PkhcPS2c2mPkhfUS242hPkhhUS2123PkhkSU2q2aP","2019":"komFA2024RkomIN2928RkonPS1w25RkonUE1x2cRkonCM1z2hRkooJK1y2bRkoqIE252gRkorSM1p20RkotSA2a1uRkotKP2c2eRkotEJ1y25RkouNI252kRkouAU232oRkouSC272bRkouMF1y1vRkovEK2822RkoxJN2621RkoxMS252cRkoyCU2d2vRkozKA2k1xRkozJE252hRkozPM1k1mRkp0FI1s27Rkp0UN2m2dRkp1JM2h2dRkp2EA1t1nRkp2KN262gRkp2FU1q2eRkp2PI2m2fRkp2SC1z26Rkp4UE232bRkp4SI2c2aRkp4PC232aRkp5MN1x23Rkp6IF2420Rkp7SU221zRkp7EM2d29Rkp7JP2d1wRkp7NK1t2sRkp8CI1y1sRkp8AF1p1zRkp8NJ2q2kRkp9SE1v29Rkp9KM2823RkpbUJ291gRkpcIA262gRkpcCN2j2bRkpdPF1i1xRkpdUK2n20RkpeAE242eRkpeIC241xRkpeJS1q2cRkpfNM2b2kRkpfFK1w2eRkpgUA2h21RkpgEC232lRkpgJP202aRkpgIS1p1tRkpiMI2622RkpiSK1k1oRkpjUC2922RkpjEF2122RkpkKJ222eRkplFN1w1xRkplIP1x2jRkplCS2427RkpmEU1n2uRkpmIK2p2uRkpnNA221mRkpnMF2e2hRkpnCJ1x2mRkpnPS1x1vRkppCK2a2iRkppAM1w2dRkpqNS2c2bRkpsIF241kRkpsNP2824RkpsAS251uRkptME221zRkpuKN2i1mRkpuUJ292qRkpuFC1u26RkpuAP1r1tRkpwJF1q22RkpxEA2326RkpxPU2j1wRkpxKI221zRkpxMC2120RkpzJI2i2cRkpzMA1h1oRkpzPE1s27RkpzNC2b2rRkpzFS292nRkq0KU2d29Rkq1JA241zRkq1EI241rRkq1CF2h27Rkq1PM1q23Rkq1NS1x26Rkq4AC2425Rkq4FP1s1xRkq4SM2i27Rkq5FJ1s1xRkq6UI2n2gRkq6AE1x2qRkq6KS1u1xRkq7JN262bRkq7PF1y1uRkq8AU1t2lRkq8IC1y26Rkq8MK2227RkqaJA261uRkqaSK1q27RkqaIP252nRkqbNE1r1yRkqbUM271zRkqhCE2m2sRkqhPU2l2rRkqhFK1i2eRkqiAI1n1pRkqjPE1q1wRkqjNF1s2fRkqjKJ1w24RkqkUS2r27RkqlCA2f23RkqlMI232eRkqlKF231yRkqmEN2m27RkqmSJ232bRkqmUP2a2vRkqnUK2r1yRkqoMA2d1xRkqpNC2k2tRkqqIU262jRkqqPJ222cRkqqFS1l1xRkqrEM1l2hRkqrCK2f2cRkqsAI2a2fRkqsFP2825RkqtSN2c1xRkqtMU262tRkqtCJ292cRkqtEK292hRkqvMN2h21RkqvAK2i2mRkqwSU1n2gRkqwJF262cRkqwEP261zRkqySE2627RkqyJC292jRkqyNF252bRkqyUM2e27RkqyAP1w25Rkr0FE1w26Rkr0IU1w2zRkr0KC2s2dRkr0NP2026Rkr0MS222aRkr2CA2f2bRkr2NI2a24Rkr2PK272cRkr2MJ1z29Rkr4FM1y2eRkr4IJ1t2qRkr5KE2d2hRkr5AN2i2fRkr5UC262dRkr7NU202tRkr7AF2521Rkr7EJ202cRkr7CP2m2eRkr7KM252qRkr7IS1r1iRkr9KI1z2eRkr9PN2n2aRkr9JU1u2nRkr9CM2d2lRkr9ES2h1yRkrbJI2f2bRkrbPA1t1mRkrbFC2g2bRkrcEN2m2cRkrdUF2j2dRkrdJK2e2kRkrePC262xRkreIM2129RkreAS232kRkrgUN2l25RkrgSP2a1yRkrgAJ1o1yRkrhFE202uRkriKA2226RkriSJ1w2uRkrjFU212eRkrjIN2e29RkrjCE312wRkrjMP2b1xRkrlNA1z1rRkrlEI242wRkrlCU2e2sRkrlSF261sRkrlKP2q2hRkrlMJ1w25RkroPC242xPkroMS222cPkrsSJ1x2kPkrsCK2k2lPkruJE232cPkruKU2n2pPkrwJE1w2mPkrwKU2j2vPkrzUK232kPkrzEJ261kPks1UK2m2iPks6EU2e2nPks8EU2r2fPksdUE2m29PksfUE2e2iPkshEU262hP","2020":"l0iSN2f1zrl0iJP2r24rl0iIU242trl0jEM1x25rl0jCK2g2erl0jFA2n2xrl0lUE2m2hrl0lJC262orl0lMS1u2irl0mPI2s2yrl0mNF282lrl0mAK1y2srl0nSU1z2hrl0nCM292brl0nEJ2429rl0oNA262crl0oIF2124rl0oKP2n2url0pME261xrl0pUC2e2grl0pJS2329rl0qPN2o1vrl0qAI252lrl0qFK1y27rl0sFC272arl0sPA2922rl0sES222frl0tMN2k1url0tKU2b25rl0tIJ232erl0uSA2l2krl0uEF2j1wrl0uCP2e2orl0vIM282frl0vNU221url0vJK2a2erl0wAF232drl0wPS1w22rl0wCE2s2lrl0xMJ292prl0xKN2624rl0xUI2c2jrl0yEA2l2arl0yPF2j27rl0yCS1z2hrl0zKI2q27rl0zUM1c1wrl0zNJ262lrl10FE1u1yrl10PC1z2hrl10AS1r2srl11IN2e27rl11JU291srl11MK252frl12EC2522rl12SF2b1trl12AP282orl13UK212grl13JI2i24rl13NM1s2mrl14FP2n2hrl14SE2n20rl14CA2k1vrl16IE1q2crl16KC2a2crl16NS1s2xrl17AU2j2qrl17FM2c2jrl17PJ222brl18CN2t2drl18SI2c2irl18EK262rrl19JA2l2drl19UF2k2trl19MP2i28rl1aSK222arl1aIC242frl1aNE1t2arl1bAM2623rl1bFJ292crl1bPU2g2frl1dNC2t2rrl1dKF2o2krl1dIS222frl1gMA2g27rl1gJE2824rl1gUP202mrl1hNK1r28rl1hSC2g22rl1hFI2a26rl1iEU241rrl1iPM2b27rl1iAJ272crl1jCI2s25rl1jJM262orl1kEN1y1trl1kIA2i2url1kPK2k2drl1lMC2e2brl1lJF2j2brl1lUS1s1zrl1mAN1q1krl1mKE2l26rl1mIP292xrl1nCU1x27rl1nMF2g23rl1nSJ2i2hrl1oEI2o25rl1oKA2h27rl1oNP1v2brl1pFU2t2mrl1pSM2v2grl1pCJ282erl1qEP2d1yrl1rJN2o1yrl1rMU2e2hrl1rIK2e2krl1sPE2s2nrl1sAC2p2hrl1sFS2n2zrl1tNI232drl1tKM2w2hrl1tUJ2820rl1uAE2a23rl1uCF2n2grl1uSP2b1orl1vUN231mrl1vKJ2c1yrl1vMI2q2erl1wFN2a27rl1wKS2e2crl1wUA2d26rl1yEC2m29pl1yUP2c2dpl20PM2728pl20EJ211npl23EK2f1qpl25EK232bpl25MS2e2gpl27MS272hpl27KE1w25pl2aKE2c23pl2aSM2k1zpl2cEK1r1upl2fSK2l28pl2hSK2w2jpl2jKS1n2kp","2021":"l8nIN2f2iCl8nEA261vCl8nPM2523Cl8nFJ2m1zCl8oCU1y1kCl8oKS2b2pCl8pNI211tCl8pPE262eRl8rMN232eRl8rPU2j1yRl8rKS2o28Rl8sCA2d25Cl8sIE1v2gCl8tSM2i26Cl8uAI2b27Cl8uNU202tCl8uEP2c1vRl8uJK1x2pCl8vSF2s2pCl8wNC2l2dCl8wUI252hCl8wEK201tRl8xFN292gRl8yUI2d1xRl8yAC2i2bCl8yES2f2iRl8zKP2d27Cl90FA2n2tRl91UE292eCl91JC241pRl91MS202aCl91IK2535Rl92AN2i2fCl92PF2h2dCl93JC2a27Rl93IK262tRl93EM2227Rl95KE1v22Rl95JF1x27Cl95PC2c2bRl95IS212gRl97KN2m2aRl97CP2225Rl97IJ1r2qRl98AM2c2eRl98FS2u2xCl99KU2o2lRl99CJ1r1wRl99NE1s2dCl9aAM282sRl9aFS1w1vRl9cMU292dRl9cFP2d29Cl9dSA2n1zRl9dIC242kCl9eJU1z2hRl9fSA2e23Rl9fFP251nRl9gCI2b27Cl9gJM1s28Cl9hSE2h1uRl9hUA262tCl9hFK262dCl9hNP2d2bRl9jSI2f1yRl9jCM2x2hRl9jNK262sRl9kPJ282dCl9lSI271xRl9lAU2l2oCl9lEC2329Cl9lMF2d21Cl9lNK242vRl9mPJ281uRl9nEC292jRl9nIU252aCl9nMF252nRl9oNJ2421Rl9qFE1y28Rl9qCN2k20Cl9qUS2f2bRl9rMA2f2dRl9sFI2h1sRl9sCN2j1wRl9sUJ2a2hRl9tKM2h2iCl9uUF222dRl9uNA2t26Cl9vCE1m22Cl9vSK2k2nCl9vJP272gCl9xNA1x21Rl9xEU2i1zCl9yCF2j29Rl9yMP2a24Cl9yKJ2r23Cl9zEI2e28Cla0CF2j2sRla0KJ1u1mRla0AS2g2jRla1EI1v21Rla1UN272aCla1MP2r1wRla2AK2n3aRla2SJ2c22Cla3FN2o2rRla5FM272dCla5PK2r2iCla5JS1q1zCla7AE202cCla7NI1x2aRla7SP252dCla7MK251vCla8UC2h2dCla9KF2n27Cla9EN1z1iCla9IA271wCla9PS232aCla9MJ2e1pClb5ES1l27flb8SC2d2fRlb8EF281nRlb8UK2b2cRlb8AP292kRlb8NM262gRlb8IJ1y23RlbaME1o20RlbaFC2824RlbaUK2b2lRlbaIP282cRlbaAJ282dRlbbSN272bRlbcME1z2aRlbcUP1s25RlbcAJ1s1uRlbdSN2r2bRlbdIF2b29RlbePA2c1xRlbeMC2t2nRlbfJN2e2bRlbfSU2d26RlbhSM1y24RlbhCA2e27RlbhKE1q24RlbhJU1w26RlbiPN2y27RlbjKA261zRlbjJE2024RlbjFU2a25RlbkPN281sRlbkCS211xRlblKI2f1zRlblJE1p24RlblFU2324RlbmCS2z23RlboJI2022RlboEU2d23RlboNM1u22RlboCP2b2vRlbqAF1w20RlbqJM1l1uRlbqCK2b2iRlbqNS232dRlbsPI2f1tRlbsUM232lRlbtKC2c2kRlbtAF1x1sRlbuPI2e29RlbvEF2b1kRlbvUS1z2xRlbwPA2423RlbwMK292uRlbxEJ231lRlbyAU222aRlbyIM202hRlbzNF2425RlbzEP241vRlc0UC271zRlc0IM282iRlc0SJ1h29Rlc1FK232dRlc2IA262dRlc3NE1x2qRlc4JA221wRlc5MI2k21Rlc5UN282jRlc5KC2v1yRlc5PS2d2mRlc7AE1s2cRlc7KP2c2bRlc7MU2b25Rlc7JF2c2fRlc7IC2f2qRlcbFC1s29PlcbNP2a2bPlcePS2d28PlceCM2h24PlcgCE2t2nPlcgPK2i2oPlciCE1w27PlciPK392jPlclEC2b2ePlclKP1o2fPlcoEC1x27PlcoKP2l24PlcqPK2f2cPlcsCP2j25PlcvCP2e2jPlcxPC1e2ePlczPC2228P","2022":"likIU1y2cClikJC2q2jRlikKP2y2gClikMS222pClilEN2729ClilAF1u1nRlimJI2f25RlimUM261uRlimSK222dClioKU242hRlioMI242aRlipJA2325RlipNC1e2bClipSP252pClirFU2m2eRlirKA2o21RlirIN2k2eClisPS1x1sClisJE1o25RlisCM2a26RlitFN291zRlitAI2d27ClivEN2k1tRlivAI2t27RlivUF2c1wRlivPK222eClivMJ2f2cCliwCS1z22RlixMK2f2lClixFP2m2cCliyIE2d2mCliyUA2621CliyJS282bClizPK282sRlizMF262mClj0EI2k1yClj0CU2a21Clj1JK242wClj2FE2d25Rlj2AU1e1yClj2IC2i2nClj2NM262cRlj3PJ2m2rClj4FE1w2rRlj5JI2o2tRlj5NS1z27Rlj6KC2b24Rlj6UE1z27Clj7PA1i29Rlj7NS1p2kRlj7JM2d2bClj9UI2f23Clj9PC1y21Rlj9EK292hRlj9FJ2j2lCljaMA242cRljaIN222fRljbEK2p2iRljcNU221yCljcCA211tCljcEP2k2gRljcFS1w1fCljeMN2c25RljeIA1u23CljeUC2a2jCljeFK262cCljeJP2229CljeES2l2eRljgMN1x2gRljgAS1o20RljhIE1x2gRljhCU2a2cRljjCE2b27CljjNI2p2bCljjSF2h2gCljjUM241nRljjAP2g2iRljkKJ2h20CljlCN2g2eCljlSF2c27RljlPU2r2iRljlIM2c28RljnPU1t2bRljnSM2927CljoKF2k2cCljoAE2k2xCljoPI2l28RljpUN1t25CljqSE1z2aRljqPF2g2lCljqAC2s2yCljsSN2920RljsEU1r1zCljsCI2f2hCljsJF2a2kCljsMK2n2oRljuFA2328RljuCK2w2nRljuMP2c1zCljuUJ2a2cRljvNE2925CljwIF1w2mRljwPM2g2sCljwUS1z2dRljwCJ2a1nRljxNA2h25CljyPF2b20RljyJS2d25RljyUK2f2eRljzEA201pCljzMC2d2gRlk0IP1z2bRlk0KJ2721Rlk1AU222kRlk1FM1s2kClk2EC2b2jClk2IP262rRlk2KS262gClk3AN2k29Clk4JF2p2hRlk4KM2j2dClk4IS1l21Rlk5PC232jRlk6UE2022Rlk6SA242iRlk6NJ222cRlk6KM1z2uRlk7PJ2326Rlk8SI2n21Rlk8EF1z2aRlk9CM2629Rlk9UA2d1uRlk9NK382zRlkaCI2l2cRlkaNP292cRlkaSJ2y1xClkfFS222bRlkfKN2z2tRlkfAC232iRlkfPM2z3aRlkfUJ2m29RlkgEI2h29RlkhKN3022RlkhFM2k2fRlkhUP2328RlkhCJ281wRlkiMI2f25RlkiEA2l1wRlkjCF2h29RlkkKE2j2bRlkkMU1l1yRlkkAP2d23RlkkIS1t29RlkmNE1r2aRlkmAK2k24RlkmIJ272eRlknSC2226RlkoNU1x26RlkoAJ262dRlkoIK252iRlkpEM2m2cRlkpFC2b2hRlkpSP262mRlkqCN282bRlkqJK1u2cRlkrFI2o2eRlkrAS202aRlkrEM2e27RlktKC2l2bFlkvMA2k2dRlkvSE2b2gRlkvUF2f25RlkvJP282iRlkwKI2l20RlkwNC292hRlkxSU2a25RlkxFA291wRlkyCE2n2kRlkyPN1x2hRlkyKI2m1xRlkySU2326RlkyMJ2c25Rll0PE1r2fRll0JN212uRll0KU212bRll0FC2c26Rll1IA292jRll1JN1p1sRll1MS252hRll2PE1s25Rll2KF282aRll3JA2e2gRll3UC2b2lRll4IF2j2nRll4NP1q24Rll5EC2j2mRll5JU2724Rll5KS2h29Rll5AM1z29Rll6NF252eRll7SC332sRll7AK2i2pRll7EJ2p1zRll8NF2j21Rll8MP2e25Rll9CK262hRll9EJ2l1xRllaUI2a1yRllaNA281yRllaSM2o1xRllaFP222eRllcME2b2iRllcAN2b2fRllcIU2b2nRllcSK2s31RllcCP2a1vRllcFJ382gRllfNC2q2jPllfPK1r27PllgFE1w2lPllgUS2b2ePlliNC1q2sPlliPK2839PlljFE2h27PlljUS2c2pPlllCN2i20PllmEF211mPllqSK2421PllqEC1w1rPlltEC252dPlltSK2126PllxCE2420PllxKS322qPllzCE282wPllzKS2p2kPlm1EC201rPlm4EK1s1vPlm6EK1z2dPlm8KE242xPlmbKE261zP","2023":"lt2EI1y1pClt2NU1s28Clt2CM251uRlt2PJ1z2mClt3AF262dRlt3KS2x1sClt4UE2228Clt4IN212iClt4CP231xRlt6EU2g29Clt6AM2b25Rlt8KJ2m2dClt8MP292iClt9UC1z1xClt9FS2n2jCltaEN1t29CltaJK1t2lCltbIA2i2fCltbFC2g2mRltbMK212mCltdCA1t2bCltdIE2629CltdMF2h2mCltdNS2e26RltfEM2h2cRltgNC2524CltgFU2223RltgKA2k2fRltgJP2r2lClthMU2826RlthSJ2d2kCltiFE2228RltiCN2e2aCltiKI2c28RltkKE2i2cRltkIC2v30CltkJS1r1uCltlPF272cCltmKE252mRltnNA2y2bCltnPF252iRltnIM1z1xRltnCJ1q25RltnUS211uRltpFN2l2uRltpCK282lRltpUS1z1tRltpEA2h25CltpPI2d2aRltpJM2e2jCltrUI1u2fCltrAN2e27CltrSP2b1xCltsJF271pClttAE2k2gClttIC2k2iRlttSK1r2oCltuPU1x2gRltuMJ2520CltvSF312vCltwPN1z2hRltwCU1x25CltwAI2s2mCltwEJ2b22RltwMK1q2lRltyAF212dRltyMJ1v1pRltyES2d27RltzKP2r27Clu0UC281nRlu0EM2h1wRlu0IS281wRlu1NA3228Rlu1FJ2224Clu2IK2g2tRlu2PS222pClu3CE202oClu3UN2g2hClu3FJ2b2lRlu4IK282gRlu5NE2h29Clu5SM2l2wClu5FP251qClu6JC1r28Rlu6AU2e31Clu7NK292qRlu7IP1r2dRlu7MS2r2pClu8UA2h2mClu8JC262eRlu9EK2c2uRlu9MP2e24RluaJA2c34RluaUF202hRluaCI2h2fCluaNS291uRludPN2n2rRludIM2b2iRludFK2a2hCludAJ2i27RlueSE212lRlufIU2g2oClufAC2a1wClufKF2628ClufPM1s23ClugSN2428RluhUE2c2kRluhFI2524RluhJP2026RluhKM352hCluhAC2g25RlujSU2e2lRlujPK202qClukNI2n2fClukEC2c20ClukFM2z1vClukSA232dRlukKJ2p26RluqMA212aRluqEP1u20RlurIU2a24RlurFN2q2gRlusAE1z2aRlusJM1y21RlusCP1q28RlusKS271rRlutNU2o2fRluuEA2e26RluuKM2q29RluuJF2c2qRluuCS2i23RluvPU1x2cRluvIN2b2tRluxPA1t26RluxSN2a2eRluxKC2z2nRluxEF2g2bRluxIJ2627RluyUM2k2pRluzIJ1w29RluzAN2c2nRlv0SC2b22Rlv0UF1q2iRlv0MN2g2bRlv2ME2f2bRlv2UA2128Rlv2SI2d1qRlv2PC2d2wRlv2NJ2f27Rlv2FK2j2wRlv4ME1x27Rlv4PI1z20Rlv4AK202lRlv4NJ241xRlv5FS241tRlv6AP1z2jRlv7EI2g20Rlv7JU2527Rlv7CF2w2hRlv7NM241uRlv8SP2p2jRlv9IA212aRlv9KN1p2rRlv9JU2j2bRlv9CF2w2oRlvbES291xRlvbJI2f28RlvbMC2g27RlvbKF2w2cRlvbUP202jRlvdMI212jRlvdEP2c2iRlvdAS1v1wRlveCN212hRlveUK2h35RlvfAJ222dRlvfEF292jRlvgCU242bRlvgNI2s2hRlvgPS1z29RlvgAK1t2eRlviNK2a1rFlvkNK232gRlvlFE2n23RlvlUI2b27RlvlCA1v26RlvlNP2d1rRlvlMS261yRlvmJK2620RlvnFU2p2cRlvnEC2721RlvnIP2b21RlvnSM2g22RlvpKA342sRlvpEU1w1sRlvpSC272uRlvpFM2e2jRlvqPJ1q2jRlvrNE2n2iRlvrSI2e2iRlvrKC2m2fRlvrMF2i29RlvsJA2b26RlvtKU1q26RlvtNM3324RlvuJE1w2bRlvuAI282bRlvuFP2522RlvuCS2i2dRlvvKN2d2mRlvwPA242mRlvwMU202bRlvwCJ2423RlvyPE222cRlvyUK232cRlvySJ201pRlvzFI322sRlvzEN1m2hRlvzAM2d2jRlw0SK252vRlw1NC2e1xRlw1IF2p2cRlw1PM212eRlw1UJ1s20Rlw3JE242iRlw3CI2o1xRlw3NF2m2lRlw3UP2s25Rlw4SA1w27Rlw5JN2h2oRlw6IE1n24Rlw6AU2823Rlw6MC2f2kRlw6SF2j2yRlw6KP2m21Rlw8FA2m25Rlw8CE2u2jRlw8MI202fRlw8UN2i2gRlw8PK2d2sRlw8JS2j2hRlwbME1o2iPlwbCK1n2fPlwdUN232iPlwdAF2a2mPlwfME2a23PlwfCK1y2kPlwhUN2d2iPlwhAF222tPlwiEM2i23PlwmEN261rPlwmFK2b2pPlwoEN252cPlwoFK2c2jPlwrNE2k29PlwrKF1s1pPlwtNE2f2cPlx0NK2a2rPlx3NK242wPlx7KN212fPlxaKN1y1xP","2024":"m33NU2d28Rm33IE1z2kRm33PK282hRm33MS2b1yRm34CF272fRm34AJ2k29Rm35NI2u1uRm36UE252cRm36SM2l2uRm37IN282jRm37JK2a2hRm37CF2b22Rm37AP2d2gRm38SU2c23Rm39EI2g2cRm39SN1r22Rm3aFA262bRm3aPK2q2gRm3aUJ1w1yRm3bIS2b2dRm3cME2a2bRm3cCN2i29Rm3cUP282bRm3dIJ2621Rm3eNM1v2cRm3eEC2e2aRm3eIK282rRm3eUS1x2tRm3eFP2z2kRm3fMA2k27Rm3fFJ2c2bRm3hPE1b1yRm3hJI2g2aRm3hSC251wRm3iPN2629Rm3iAU211vRm3iKM281uRm3jSI2v2gRm3jJC212bRm3kKA2226Rm3kFE2022Rm3kUN272iRm3kPM1z2nRm3lCI1y1zCm3mEA1x1eCm3mJP1w2fCm3mIN1w2wCm3mFM242fCm3oUE1n24Cm3oNC2g23Cm3oPS1q28Cm3pKF2n29Cm3pMJ2e1qCm3qCU271zcm3qNA261pCm3rIU2d2bCm3rSK261tCm3rFJ2029Cm3rMP2829Cm3sNE2a23Cm3sAC2h28Cm3tUN2g2lCm3tPF2p2iCm3tSM1s2bCm3tKJ2k2oCm3uIE202hCm3vUA2f1wCm3vMK2s2eCm3vJS272nCm3wEC2b23Cm3xAI2c2jCm3xSF2k2cCm3xKP2v2rCm3yCU292bRm3yJM2429Rm3zEF2d1vRm3zNK2i2aRm40CI2b2jRm40SP262fRm40JA222fRm41FM262iRm42JE1y27Rm42NP2l2rRm43UI292gRm43AM1j1wRm43SK2b2mRm44FC202bRm44JN282lRm45IA2j27Rm45EK222dRm46FU1x2pRm46JN2g2qRm46PM1o21Rm47NA2o23Rm47FU2c2kRm47ES1p20Rm47IC2f2gRm49MN2m2hFm4bMF2g2mRm4bEU2m2jRm4bKC2n2bRm4bIS252hRm4cAE2622Rm4cJP262kRm4dKU2g25Rm4dFS242pRm4eAN2329Rm4eMC1y1qRm4eIP2g2aRm4fEP2b20Rm4fFS1z2nRm4gMN1v24Rm4gCA2d25Rm4gIK1x2gRm4gUJ2a28Rm4hPF2w2oRm4iEM2621Rm4iUK252qRm4jAF2a2dRm4jKJ2l2qRm4jCS2g2cRm4kNI262bRm4kUM1v22Rm4lAE1v28Rm4lFK2d2wRm4lCS1z2cRm4lPJ2c26Rm4nMJ2a1vRm4oNE1z1wRm4oUI2h2cRm4oAC1x26Rm4oKS2c27Rm4oFP2c2sRm4pCN242jRm4qKA2c1yRm4qPI2e2nRm4qMS1r2jRm4rNC291vRm4rJF2f29Rm4sPE1x2oRm4sKU2h25Rm4sIM2922Rm4sAS1y29Rm4uPU2o2fRm4uSJ2h2bRm4uEN222aRm4uCK2l2dRm4vAM272eRm4vIF2l2tRm5oPC2d1tRm5oUM1w27Rm5oNJ2v1wRm5pSA292bRm5pPI2h2qRm5pEF312jRm5qMU2r2bRm5qNK271vRm5qCJ2i2eRm5rEA1y2aRm5rSI232kRm5rJK1z2fRm5rCP1w2eRm5tJE1p1xRm5tFN222mRm5tSU2b25Rm5uPA1r20Rm5uMK2q2fRm5vFN1z27Rm5wPA2a28Rm5wCE282aRm5wJU2228Rm5wKM222fRm5xEN201sRm5xIM282iRm5yKC2523Rm5yJF3235Rm5zIA2c27Rm5zNP2c1yRm5zUS2220Rm60KF2i2lRm61EI282cRm61UC221yRm61NJ2g2mRm61MP2h24Rm61AS292dRm63IC2s29Rm63MF242mRm63AK202bRm63NS2q2dRm64EU2o2dRm65SE2e2lRm65CM2227Rm65IF2s2lRm65KP2p27Rm65AJ281qRm67SE1z1sRm67UF2i2eRm67CK1z2iRm67AP1u22Rm68JI2e2lRm69SN1y25Rm69UP2i25Rm6aFA2o2zRm6aKE201vRm6aMI2r2gRm6aJC262kRm6bPS1u2iRm6cMU261zRm6cAI2s2wRm6cKN1z23Rm6cFC252kRm6cEJ271vRm6eMA241sRm6eNF2x2jRm6eEJ2e1uRm6fKI2e23Rm6fUC2h1mRm6fSJ2i2aRm6gNF2r1vRm6hUA201xRm6hKI2622Rm6hSF2b29Rm6hCM1u2bRm6hEP2g1xRm6jFI3132Rm6jMN2g27Rm6jAU2421Rm6jPC2l2gRm6jEK1z2cRm6jJS2f2iRm6lME2624Rm6lNU2f1zRm6lCA1y2eRm6lKS2d20Rm6lPJ2d29Rm6nCE1i2fRm6nAN261vRm6nIU2j2kRm6nJM1w1fRm6nFK2c2qRm6nSP2h1yRm6qAN1x2bPm6qIE1x2lPm6qPM2n2uPm6qSK1v26Pm6sAN2a2jPm6sSK242bPm6tIE292fPm6tPM2g2tPm6xKN252fPm6xEM211yPm6zKN2c2gPm6zEM1y25Pm72ME2i29Pm72NK292nPm74NK241qPm74ME2a2kPm76EM252gPm78MN2n2lPm7bMN1u28Pm7eNM2825Pm7gNM282aPm7iMN1q1vP","2025":"mdaAU2i2mRmdaMF2r2cRmdaJG2c1vRmdbKN262kRmdbCI1m2lRmdbSP1n29RmdcUE2i2dRmdcMJ2h23RmddSF271zRmdeKE2f1qRmdeAI2j2iRmdfFM292dRmdfUG2224RmdfJP2e2hRmdgIA2924RmdgNC2r22RmdhEM1y24RmdhUK2023RmdhGJ2a21RmdhPS1y25RmdiNI2i2gRmdiFA232bRmdjEA1j27RmdjCJ262jRmdjUP1q1wRmdjKS2a2uRmdlFE312fRmdlGN1v2nRmdlSM252aRmdlAJ2g2aRmdlCP2h2mRmdmIU252bRmdnGN252aRmdnFC2k2pRmdoEI2d2bRmdoNU2d1rRmdoJK292oRmdoMP221zRmdoAS2m2fRmdpCF2m2bRmdqEN1g2sCmdqPJ2d28CmdqKS231yCmdqMG2e23CmdsUI242dCmdsPM1t2gCmdsFS252bCmduNU2e26CmduGP252eCmdvAE242cCmdvJF2l27CmdwKG1w2nCmdwIC271gCmdwSP2h25CmdxEU1v2wCmdxMF291tCmdyGJ2h29CmdzIA1m25CmdzCN1u2dCme0JK2p2hCme0FP282lCme0MS2c2mCme2CA1y2gCme2FK2c2gCme3JM262tCme3NI2g2uCme3SG1y24Cme4CE261uCme4AU2h1kCme4PK241yCme6EI1z2gCme6AN292eCme6UC2720Cme6GF1z28Cme6KM1q24Cme6SJ2q1vCme7PE2b23Rme8PN2h29Rme8IG252gRme9UA2j2kRme9FE2e2bRme9SK2i2bRmeaPC2z2eRmeaJM1u2aRmebCA282lRmebFU2g2jRmebIK292hRmebNS272hRmebEG1r2fRmedMU1s1wRmedJC2e2pRmedAF1j1wRmedIS2m2eRmeeNG2926RmeeEK1n2dRmefJI2d23RmefUK2m2bRmegMA2o2kRmegIF2m2eRmegCG262bRmegNP2j2yRmegES292pRmehUF1z27RmeiNA292iRmeiCJ2k2dRmeiKP2c29RmeiEM1r2uRmeiSG1l2cRmekIM221nFmemKI1i29RmemJN272hRmemSA2827RmemPF2h2qRmemUM232kRmeoJI2h2fRmeoGM1z2aRmepSN271yRmepKE2e1wRmepCM2328RmeqGA292iRmeqFP202uRmerCU2729RmerKN262fRmesSE2b2lRmesGI281pRmesMP1z27RmesFC242fRmetMJ2j2aRmetKU1w1yRmeuAI2a2rRmeuES1t27RmevMC292fRmevGK2u2wRmewFI2b2uRmewAN2027RmewEJ2g2kRmewUS221xRmexMC2j26RmexPG2625RmeyIE2d25RmeyUJ282rRmezAC2e1dRmezPM1u27RmezGS1m1vRmezIN252qRmezKF2i2eRmf5JU2l2eRmf5IN2c2qRmf5CM1w2jRmf5AK202fRmf5FS2f1rRmf6AP2i27Rmf7JE2t2eRmf7KI1y28Rmf7SC2n1lRmf8PN242hRmf8KM2631Rmf8FG242eRmf9JN2t2rRmf9SU1m1xRmfaGE1s2nRmfaIC2l26RmfaKF2y28RmfaPU2g20RmfaAM2i2eRmfbSE2t2dRmfbNF2a2kRmfcGA2523RmfcCU2e2vRmfcKJ2h22RmfdPI2t2zRmfdAF2g2dRmfdNM2l2sRmfeGU1w1vRmffPA202nRmffNE1q26RmffGC211uRmffIF2g26RmffJS302yRmfgMK331mRmfhNE2f26RmfhUA2b2rRmfhIS2622RmfhPC2b1vRmfhGK252tRmfjFN242dRmfjUC1s26RmfjIJ2j2sRmfjEP1u2aRmfjMS2j2fRmfkKG2620RmflAC2e1tRmflEJ2j2uRmflIP1o2nRmfmNF2g25RmfmUM2428RmfmSK2e2iRmfnCI1y2kRmfnJG1n20RmfoMN2b1zRmfoUF2j26RmfoAP221uRmfoSJ2j2mRmfoEK2e2mRmfpEG1l22RmfqFI2928RmfqNJ2x2pRmfrCE1q1zRmfrGU2g2bRmfrNK252bRmfrAS2d23RmftUI2g2cRmftGC2i1nRmftJF2p2oRmftSA2826rmftKP2e2bRmfuNM282eRmfvIE2r2lRmfvJU2e2nRmfvFK2f2yRmfvPS2d2aRmfvAG271rRmfxMN232dRmfxEU281xRmfxSC2m2gRmfxAK2022RmfxPG2q2jRmfyFJ2829RmfzUE1k1vRmfzCN2j2dRmfzMA2123RmfzPK1p2bRmg0MI2n2iRmg0SF2n1oRmg0GP2029Rmg1NA1q26Rmg1KU2j29Rmg1EC2m2cRmg2SU2c2aRmg2GF2i29Rmg2IM2c2pRmg3EN2729Rmg3KC2722Rmg4SI232nRmg4PJ2k2cRmg5KA2923Rmg5EF2t2nRmg6UN1r2hRmg6SM2l27Rmg6CP272bRmg7FA262sRmg7IJ2423Rmg8ME2m1yRmg8UG1q2rRmg8CS1x27Rmg8NP1r28Rmg9UJ2629Rmg9IG1r23RmgaAE2l24RmgaFM1z2oRmgaJS2j2dRmgbNG1m1uRmgbIP272dRmgcJA232eRmgcEC1s2gRmgdPU231xRmgdFG282cRmgdMK2f2pRmgeJA2d2wRmgeCI252pRmgeNS2c24RmgfPE2c2fRmgfMG2620RmggIU2m1tRmggFJ252jRmggCK1u28RmghEA1q2fRmgiUN1u23RmgiMI202bRmgiCK1p2kRmgiJP2g2bRmgiGS2122RmgjAE2g20RmgkNC2j2eRmgkPF242pRmgkGM1h20RmgkKJ2v23RmgnGM202tPmgnIA1w28PmgnNP241xPmgnSK252uPmgpAI1o25PmgpKS2b2ePmgqPN2e1oPmgqMG2322PmgrIA2f2dPmgrSK2122PmgsNP2127PmguIK2h21PmguPM1x2aPmgwPM2h2bPmgwIK1w2iPmgzKI2c20PmgzMP242cPmh1KI2b2iPmh1MP292ePmh3IK2q2zPmh6PK2e2hPmh8PK262jPmhbKP2i2gPmhdKP2p2eP"}};
+const LIVE_SCHEDULE={"y":2026,"src":"ESPN schedule via sportsdataverse/wehoop-wnba-data","games":[["2026-05-08","CON","NYL","R",0,75,106],["2026-05-08","WAS","TOR","R",0,68,65],["2026-05-08","GSV","SEA","R",0,91,80],["2026-05-09","DAL","IND","R",0,107,104],["2026-05-09","PHX","LVA","R",0,99,66],["2026-05-09","ATL","MIN","R",0,91,90],["2026-05-09","CHI","PDX","R",0,98,83],["2026-05-10","SEA","CON","R",0,89,82],["2026-05-10","NYL","WAS","R",0,98,93],["2026-05-10","LVA","LAS","R",0,105,78],["2026-05-10","PHX","GSV","R",0,79,95],["2026-05-12","ATL","DAL","R",0,77,72],["2026-05-12","MIN","PHX","R",0,88,84],["2026-05-12","NYL","PDX","R",0,96,98],["2026-05-13","SEA","TOR","R",0,73,86],["2026-05-13","LVA","CON","R",0,98,69],["2026-05-13","CHI","GSV","R",0,69,63],["2026-05-13","IND","LAS","R",0,87,78],["2026-05-14","MIN","DAL","R",0,90,86],["2026-05-14","NYL","PDX","R",0,100,82],["2026-05-15","LVA","CON","R",0,101,94],["2026-05-15","WAS","IND","R",0,104,102],["2026-05-15","TOR","LAS","R",0,95,99],["2026-05-15","CHI","PHX","R",0,83,91],["2026-05-17","LVA","ATL","R",0,85,84],["2026-05-17","SEA","IND","R",0,78,89],["2026-05-17","CHI","MIN","R",0,86,79],["2026-05-17","TOR","LAS","R",0,106,96],["2026-05-18","WAS","DAL","R",0,69,92],["2026-05-18","CON","PDX","R",0,82,83],["2026-05-19","TOR","PHX","R",0,98,90],["2026-05-20","PDX","IND","R",0,73,90],["2026-05-20","DAL","CHI","R",0,99,89],["2026-05-20","CON","SEA","R",0,80,78],["2026-05-21","GSV","NYL","R",0,87,70],["2026-05-21","TOR","MIN","R",0,72,100],["2026-05-21","LAS","PHX","R",0,97,88],["2026-05-22","DAL","ATL","R",0,69,86],["2026-05-22","GSV","IND","R",0,82,90],["2026-05-22","CON","SEA","R",0,59,77],["2026-05-23","MIN","CHI","R",0,85,75],["2026-05-23","PDX","TOR","R",0,99,80],["2026-05-23","LAS","LVA","R",0,101,95],["2026-05-24","PHX","ATL","R",0,80,82],["2026-05-24","DAL","NYL","R",0,91,76],["2026-05-24","WAS","SEA","R",0,85,97],["2026-05-25","PDX","NYL","R",0,81,74],["2026-05-25","CON","GSV","R",0,70,97],["2026-05-27","PHX","NYL","R",0,74,84],["2026-05-27","TOR","CHI","R",0,111,104],["2026-05-27","ATL","MIN","R",0,81,96],["2026-05-27","CON","PDX","R",0,61,71],["2026-05-27","WAS","SEA","R",0,78,64],["2026-05-28","LVA","DAL","R",0,87,95],["2026-05-28","IND","GSV","R",0,88,90],["2026-05-29","PHX","NYL","R",0,68,75],["2026-05-29","LAS","WAS","R",0,92,87],["2026-05-29","MIN","CHI","R",0,79,58],["2026-05-29","ATL","PDX","R",0,86,66],["2026-05-30","SEA","TOR","R",0,72,93],["2026-05-30","LAS","CON","R",0,81,84],["2026-05-30","IND","PDX","R",0,84,100],["2026-05-31","LVA","GSV","R",0,91,81],["2026-06-01","SEA","DAL","C",0,56,79],["2026-06-01","MIN","PHX","C",0,111,77],["2026-06-02","CON","ATL","C",0,75,91],["2026-06-02","CHI","WAS","C",0,72,90],["2026-06-02","PDX","GSV","C",0,77,95],["2026-06-02","LVA","LAS","C",0,79,69],["2026-06-03","TOR","NYL","C",0,82,97],["2026-06-03","PHX","SEA","C",0,72,68],["2026-06-04","ATL","IND","C",0,71,83],["2026-06-04","GSV","MIN","C",0,84,87],["2026-06-05","CON","CHI","C",0,80,85],["2026-06-05","DAL","LAS","C",0,104,96],["2026-06-05","PHX","PDX","C",0,78,72],["2026-06-06","SEA","MIN","C",0,68,88],["2026-06-06","GSV","LVA","C",0,79,84],["2026-06-06","WAS","ATL","C",0,77,109],["2026-06-06","IND","NYL","C",0,75,83],["2026-06-07","CHI","TOR","C",0,68,85],["2026-06-07","PDX","LAS","C",0,72,89],["2026-06-08","NYL","CON","C",0,89,80],["2026-06-08","IND","WAS","C",0,78,76],["2026-06-08","SEA","LVA","C",0,91,101],["2026-06-09","ATL","CHI","C",0,82,75],["2026-06-09","DAL","MIN","C",0,76,100],["2026-06-09","PHX","GSV","C",0,81,87],["2026-06-10","CON","TOR","C",0,102,106],["2026-06-10","LAS","SEA","C",0,88,83],["2026-06-11","CHI","IND","C",0,106,114],["2026-06-11","NYL","ATL","C",0,104,90],["2026-06-11","PHX","DAL","C",0,70,85],["2026-06-11","LVA","PDX","C",0,105,89],["2026-06-12","TOR","WAS","C",0,85,86],["2026-06-12","GSV","SEA","C",0,76,72],["2026-06-13","IND","CON","C",0,85,75],["2026-06-13","MIN","LVA","C",0,97,100],["2026-06-13","DAL","PDX","C",0,83,84],["2026-06-13","LAS","PHX","C",0,111,102],["2026-06-14","WAS","NYL","C",0,64,86],["2026-06-14","ATL","TOR","C",0,102,77],["2026-06-15","LVA","DAL","C",0,66,96],["2026-06-15","PDX","MIN","C",0,74,107],["2026-06-15","LAS","GSV","C",0,58,78],["2026-06-16","TOR","IND","C",0,91,113],["2026-06-17","WAS","CON","C",0,88,81],["2026-06-17","NYL","CHI","C",0,96,95],["2026-06-17","DAL","GSV","C",0,80,91],["2026-06-17","MIN","LAS","C",0,99,83],["2026-06-17","LVA","PHX","C",0,86,76],["2026-06-17","SEA","PDX","C",0,89,94],["2026-06-18","ATL","IND","R",0,108,101],["2026-06-19","TOR","CON","R",0,101,97],["2026-06-19","WAS","NYL","R",0,86,83],["2026-06-19","MIN","GSV","R",0,81,75],["2026-06-20","IND","ATL","R",0,96,113],["2026-06-20","SEA","PHX","R",0,73,93],["2026-06-20","CHI","DAL","R",0,92,93],["2026-06-21","GSV","LVA","R",0,73,92],["2026-06-21","WAS","MIN","R",0,84,79],["2026-06-21","NYL","LAS","R",0,97,98],["2026-06-22","CHI","CON","R",0,63,92],["2026-06-22","TOR","ATL","R",0,87,94],["2026-06-22","PHX","IND","R",0,77,86],["2026-06-22","DAL","SEA","R",0,112,110],["2026-06-23","NYL","LVA","R",0,87,76],["2026-06-24","PHX","IND","R",0,111,109],["2026-06-24","MIN","WAS","R",0,78,76],["2026-06-24","PDX","CHI","R",0,78,101],["2026-06-24","ATL","GSV","R",0,66,77],["2026-06-25","LAS","TOR","R",0,97,125],["2026-06-25","DAL","LVA","R",0,84,99],["2026-06-25","NYL","SEA","R",0,88,99],["2026-06-26","WAS","CON","R",0,57,68],["2026-06-26","PDX","CHI","R",0,94,124],["2026-06-26","ATL","GSV","R",0,75,78],["2026-06-27","PHX","TOR","R",0,89,80],["2026-06-27","LAS","IND","R",0,87,111],["2026-06-27","ATL","SEA","R",0,90,105],["2026-06-28","MIN","DAL","R",0,85,77],["2026-06-28","PDX","WAS","R",0,123,124],["2026-06-28","LVA","CHI","R",0,107,99],["2026-06-28","NYL","GSV","R",0,67,76],["2026-06-30","LVA","NYL","F",0,85,93],["2026-07-02","ATL","WAS","R",0,76,81],["2026-07-02","DAL","CON","R",0,86,83],["2026-07-02","SEA","PHX","R",0,67,90],["2026-07-03","MIN","NYL","R",0,86,99],["2026-07-03","CHI","LVA","R",0,90,98],["2026-07-04","GSV","ATL","R",0,88,83],["2026-07-04","PDX","SEA","R",0,77,72],["2026-07-05","DAL","TOR","R",0,89,76],["2026-07-05","IND","LVA","R",0,84,68],["2026-07-06","GSV","WAS","R",0,62,49],["2026-07-06","CON","MIN","R",0,90,89],["2026-07-06","SEA","LAS","R",0,82,64],["2026-07-07","DAL","NYL","R",0,88,77],["2026-07-07","CHI","PHX","R",0,77,66],["2026-07-08","GSV","TOR","R",0,83,75],["2026-07-08","MIN","CON","R",0,86,80],["2026-07-08","IND","LAS","R",0,92,106],["2026-07-09","SEA","ATL","R",0,78,89],["2026-07-09","IND","PHX","R",0,92,89],["2026-07-09","LVA","PDX","R",0,88,80],["2026-07-10","GSV","CON","R",0,79,64],["2026-07-10","DAL","TOR","R",0,108,95],["2026-07-10","CHI","LAS","R",0,87,102],["2026-07-11","NYL","MIN","R",0,85,90],["2026-07-11","PDX","ATL","R",0,102,92],["2026-07-11","PHX","LVA","R",0,58,106],["2026-07-12","NYL","TOR","R",0,91,93],["2026-07-12","SEA","WAS","R",0,79,84],["2026-07-12","CHI","DAL","R",0,91,96],["2026-07-12","IND","LVA","R",0,109,75],["2026-07-13","LAS","ATL","R",0,92,101],["2026-07-13","PHX","MIN","R",0,100,104],["2026-07-14","PDX","CON","R",0,87,90],["2026-07-14","WAS","TOR","R",0,79,62],["2026-07-15","SEA","CHI","R",0,90,95],["2026-07-15","LAS","MIN","R",0,87,96],["2026-07-15","GSV","IND","R",0,88,75],["2026-07-16","PDX","WAS","R",0,75,56],["2026-07-17","SEA","IND","R",0,107,110],["2026-07-17","ATL","TOR","R",0,111,92],["2026-07-17","LAS","CHI","R",0,82,96],["2026-07-17","CON","PHX","R",0,96,83],["2026-07-18","NYL","IND","R",0,88,108],["2026-07-18","PDX","MIN","R",0,93,101],["2026-07-18","WAS","GSV","R",0,69,74],["2026-07-19","LAS","DAL","R",0,82,90],["2026-07-19","CHI","ATL","R",0,91,93],["2026-07-19","CON","PHX","R",0,63,72],["2026-07-20","LVA","TOR","R",0,109,83],["2026-07-20","NYL","DAL","R",0,99,98],["2026-07-20","WAS","GSV","R",0,90,82],["2026-07-20","MIN","SEA","R",0,105,102],["2026-07-22","PHX","LAS","R",0,86,82],["2026-07-22","MIN","SEA","R",0,86,76],["2026-07-22","CHI","NYL","R",0,94,95],["2026-07-22","LVA","WAS","R",0,99,100],["2026-07-22","CON","IND","R",0,88,123],["2026-07-22","DAL","PDX","R",0,101,97],["2026-07-28","CON","WAS","R",0,84,92],["2026-07-28","TOR","MIN","R",0,93,100],["2026-07-28","IND","SEA","R",0,105,95],["2026-07-28","PDX","LVA","R",0,83,98],["2026-07-28","NYL","LAS","R",0,113,109],["2026-07-29","ATL","DAL","R",0,82,81],["2026-07-29","GSV","PHX","R",0,89,91],["2026-07-30","MIN","TOR","R",0,104,72],["2026-07-30","CON","CHI","R",0,88,94],["2026-07-30","NYL","LVA","R",0,99,104],["2026-07-31","SEA","ATL","R",0,89,98],["2026-07-31","DAL","WAS","R",0,75,81],["2026-07-31","IND","PDX","R",0,112,98],["2026-08-01","LVA","CHI","R",0,83,84],["2026-08-01","NYL","PHX","R",0,94,92],["2026-08-02","IND","MIN","R",0,100,108],["2026-08-02","LAS","PDX","R",0,106,101],["2026-08-02","CON","DAL","R",0,63,83],["2026-08-02","TOR","GSV","R",0,79,96],["2026-08-03","LVA","ATL","R",0,109,87],["2026-08-03","SEA","NYL","R",0,83,95],["2026-08-03","PHX","CHI","R",0,106,101],["2026-08-04","TOR","GSV","R",0,81,92],["2026-08-05","PHX","ATL","R",0,82,96],["2026-08-05","SEA","NYL","R",0,86,92],["2026-08-05","DAL","WAS","R",0,92,96],["2026-08-05","LAS","CHI","R",0,88,95],["2026-08-06","LVA","IND","R",0,86,84],["2026-08-06","LAS","MIN","R",0,89,82],["2026-08-06","TOR","PDX","R",0,83,97],["2026-08-07","PHX","CON","R",0,72,75],["2026-08-07","ATL","WAS","R",0,74,79],["2026-08-07","GSV","DAL","R",0,94,76],["2026-08-08","LVA","MIN","R",0,87,98],["2026-08-08","IND","CHI","R",0,90,86],["2026-08-08","SEA","PDX","R",0,93,100],["2026-08-09","LVA","NYL","R",0,71,111],["2026-08-09","PHX","WAS","R",0,75,95],["2026-08-09","DAL","MIN","R",0,90,103],["2026-08-09","GSV","LAS","R",0,84,78],["2026-08-10","TOR","ATL","R",0,95,107],["2026-08-10","CHI","SEA","R",0,88,97],["2026-08-11","NYL","IND","R",0,92,106],["2026-08-11","WAS","LVA","R",0,76,86],["2026-08-11","PHX","LAS","R",1,94,87],["2026-08-12","TOR","DAL","R",0,88,94],["2026-08-12","CHI","GSV","R",0,71,91],["2026-08-12","MIN","PDX","R",0,85,81],["2026-08-13","ATL","CON","R",0,104,69],["2026-08-13","LAS","NYL","R",0,81,85],["2026-08-13","WAS","LVA","R",0,76,83],["2026-08-14","DAL","IND","R",0,87,98],["2026-08-14","PDX","SEA","R",0,84,82],["2026-08-15","NYL","CON","R",0,82,75],["2026-08-15","LAS","WAS","R",0,70,80],["2026-08-15","MIN","LVA","R",0,92,87],["2026-08-16","CHI","SEA","R",0,82,80],["2026-08-16","IND","ATL","R",0,95,91],["2026-08-16","PDX","PHX","R",0,88,85],["2026-08-17","DAL","GSV","R",0,70,78],["2026-08-18","LAS","CON","R",0,77,85],["2026-08-18","IND","TOR","R",0,101,95],["2026-08-18","NYL","CHI","R",0,86,93],["2026-08-18","ATL","LVA","R",0,97,82],["2026-08-19","TOR","WAS","R",0,82,93],["2026-08-19","MIN","GSV","R",0,77,66],["2026-08-20","IND","DAL","R",0,85,91],["2026-08-20","CON","LVA","R",0,78,101],["2026-08-20","ATL","LAS","R",0,124,88],["2026-08-21","MIN","WAS","R",0,94,84],["2026-08-21","GSV","CHI","R",0,70,73],["2026-08-21","PDX","TOR","R",0,79,82],["2026-08-22","IND","NYL","R",0,102,109],["2026-08-22","CON","LAS","R",0,68,77],["2026-08-22","ATL","PHX","R",0,99,89],["2026-08-23","SEA","DAL","R",0,70,92],["2026-08-23","IND","CHI","R",0,113,90],["2026-08-23","WAS","PDX","R",0,105,100],["2026-08-23","LVA","TOR","R",0,88,78],["2026-08-24","GSV","MIN","R",0,80,66],["2026-08-24","ATL","LAS","R",0,78,71],["2026-08-25","CHI","CON","R",0,81,87],["2026-08-25","PDX","DAL","R",0,78,96],["2026-08-25","WAS","PHX","R",0,94,84],["2026-08-26","GSV","CON","R",0,89,64],["2026-08-26","TOR","SEA","R",0,78,90],["2026-08-27","GSV","NYL","R",0,79,60],["2026-08-27","WAS","PHX","R",0,80,73],["2026-08-28","PDX","ATL","R",0,101,83],["2026-08-28","CON","IND","R",0,91,111],["2026-08-28","TOR","LVA","R",0,73,93],["2026-08-28","WAS","LAS","R",0,82,88],["2026-08-29","CHI","NYL","R",0,66,85],["2026-08-29","TOR","PHX","R",0,69,101],["2026-08-30","MIN","ATL","R",0,81,89],["2026-08-30","LAS","SEA","R",0,90,74],["2026-08-30","GSV","PDX","R",0,86,69],["2026-08-30","CON","DAL","R",0,71,97],["2026-09-17","CON","ATL","R",0,59,103],["2026-09-17","WAS","CHI","R",0,110,80],["2026-09-17","LAS","DAL","R",0,77,97],["2026-09-17","PHX","PDX","R",0,94,91],["2026-09-17","LVA","SEA","R",0,114,77],["2026-09-18","IND","TOR","R",0,103,85],["2026-09-18","NYL","MIN","R",0,93,81],["2026-09-18","PDX","GSV","R",0,66,82],["2026-09-19","PHX","DAL","R",0,82,87],["2026-09-19","CHI","ATL","R",0,81,106],["2026-09-19","SEA","GSV","R",0,57,70],["2026-09-20","MIN","CON","R",0,101,89],["2026-09-20","NYL","TOR","R",0,106,69],["2026-09-20","WAS","IND","R",0,93,77],["2026-09-20","PDX","LAS","R",0,84,105],["2026-09-20","SEA","LVA","R",0,77,98],["2026-09-21","ATL","NYL","R",0,95,84],["2026-09-21","DAL","PHX","R",0,86,87],["2026-09-22","CON","WAS","R",0,69,79],["2026-09-22","MIN","IND","R",0,77,96],["2026-09-22","TOR","CHI","R",0,85,97],["2026-09-22","LAS","LVA","R",0,79,89],["2026-09-22","GSV","PDX","R",0,82,90],["2026-09-23","ATL","NYL","R",0,83,65],["2026-09-23","DAL","SEA","R",0,103,91],["2026-09-24","TOR","CON","R",0,81,95],["2026-09-24","CHI","WAS","R",0,93,101],["2026-09-24","IND","MIN","R",0,66,86],["2026-09-24","GSV","LAS","R",0,76,75],["2026-09-24","LVA","PHX","R",0,100,82],["2026-09-27","NYL","MIN","P",0,91,75],["2026-09-27","IND","LVA","P",0,85,102],["2026-09-27","WAS","ATL","P",0,77,92],["2026-09-27","DAL","GSV","P",0,80,104],["2026-09-29","LVA","IND","P",0,89,99],["2026-09-29","MIN","NYL","P",0,71,87],["2026-09-30","ATL","WAS","P",0,93,75],["2026-09-30","GSV","DAL","P",0,100,108],["2026-10-01","IND","LVA","P",0,83,94],["2026-10-02","DAL","GSV","P",0,73,77],["2026-10-04","NYL","ATL","P",0,82,92],["2026-10-04","LVA","GSV","P",0,60,71],["2026-10-07","NYL","ATL","P",0,98,101],["2026-10-07","LVA","GSV","P",0,81,83],["2026-10-09","ATL","NYL","P",0,85,83],["2026-10-09","GSV","LVA","P",0,87,77],["2026-10-17","ATL","GSV","P",0,64,68],["2026-10-19","ATL","GSV","P",0,79,65],["2026-10-21","GSV","ATL","P",0,71,97],["2026-10-24","GSV","ATL","P",0,null,null],["2026-10-26","ATL","GSV","P",0,null,null],["2026-10-29","GSV","ATL","P",0,null,null],["2026-10-31","ATL","GSV","P",0,null,null]]};
+
+</script>
+<script>
+(function(){
+'use strict';
+const LS_KEY = LEAGUE.keys.hist;
+const $ = function(s){ return document.querySelector(s); };
+const $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+const D0 = decodeHistory(HIST_DATA), F = D0.F;
+const LIVE_Y = LIVE_SCHEDULE.y;
+let D = D0, S = loadSettings(), R0 = null, R = null, si = D0.seasons.length, pos = 0, tab = 'ratings';
+const sort = {ratings:{key:'rating', dir:-1}, rec:{key:'hiR', dir:-1}};
+let gShown = 250, champs = {}, recRows = [];
+
+function loadSettings(){
+  let s = JSON.parse(JSON.stringify(HIST_DEFAULTS));
+  try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const o = JSON.parse(raw); Object.keys(s).forEach(function(k){ if(o[k] !== undefined) s[k] = o[k]; }); s.types = Object.assign({}, HIST_DEFAULTS.types, o.types || {}); } }catch(e){}
+  return s;
+}
+function saveSettings(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+
+// ---------- helpers ----------
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(iso){ return MONTHS[+iso.slice(5, 7) - 1] + ' ' + (+iso.slice(8)) + ', ' + iso.slice(0, 4); }
+function fmtInt(n){ return n.toLocaleString('en-US'); }
+function lum(hex){
+  const n = parseInt(hex.slice(1), 16);
+  const c = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function badge(f, y){
+  const c = F[f].c, t = lum(c[0]) > 0.19 ? '#0B1220' : '#FFFFFF';
+  return '<span class="tb" style="--p:' + c[0] + ';--s:' + c[1] + ';--t:' + t + '">' + eraOf(F[f], y).code + '</span>';
+}
+function tname(f, y){ return eraOf(F[f], y).name; }
+function sgn(v, d){ return (v > 0 ? '+' : '') + v.toFixed(d); }
+// result of game gi from the point of view of franchise f
+function gameText(gi, f){
+  const y = D.season[gi], home = D.h[gi] === f, opp = home ? D.a[gi] : D.h[gi];
+  const own = home ? D.hp[gi] : D.ap[gi], oth = home ? D.ap[gi] : D.hp[gi];
+  const where = D.neu[gi] ? 'vs' : (home ? 'vs' : 'at');
+  return (own > oth ? 'W ' : 'L ') + own + '-' + oth + ' ' + where + ' ' + eraOf(F[opp], y).code + (D.neu[gi] ? ' (neutral)' : '');
+}
+function typePill(gi){ const c = TYPE_LETTERS[D.ty[gi]]; return '<span class="pill ' + c + '">' + TYPE_NAMES[c] + '</span>'; }
+function recDesc(rec, f){
+  if(!rec) return '<td class="res mut">–</td>';
+  const gi = rec.gi;
+  return '<td class="res"><b>' + fmtDate(dayToIso(D.day[gi])) + '</b> · ' + seasonLabel(rec.y) + '<br><span class="winc">' + gameText(gi, f) + '</span> ' + typePill(gi) + '</td>';
+}
+function sparkline(vals){
+  const n = vals.length; if(n < 2) return '';
+  const w = 84, h = 22, step = Math.max(1, Math.ceil(n / 60));
+  let mn = Infinity, mx = -Infinity;
+  vals.forEach(function(v){ if(v < mn) mn = v; if(v > mx) mx = v; });
+  const span = (mx - mn) || 1, pts = [];
+  for(let i = 0; i < n; i += step) pts.push(i);
+  if(pts[pts.length - 1] !== n - 1) pts.push(n - 1);
+  const s = pts.map(function(i){ return (i / (n - 1) * (w - 2) + 1).toFixed(1) + ',' + (h - 2 - (vals[i] - mn) / span * (h - 4)).toFixed(1); }).join(' ');
+  return '<svg class="sp" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="' + s + '"/></svg>';
+}
+const cur = function(){ return R.seasons[si]; };
+
+// ---------- computing ----------
+function compute(){
+  $('#overlay').hidden = false; $('#overlayTxt').textContent = 'Rating ' + D0.seasons.length + ' seasons…';
+  setTimeout(function(){
+    R0 = runHistory(D0, S);
+    computeLive();
+    deriveChamps();
+    si = Math.min(si, R.seasons.length - 1);
+    fillSeasonSelect(); fillTeamSelects();
+    setSeason(si, true);
+    renderAll();
+    $('#overlay').hidden = true;
+    if(!compute.synced){ compute.synced = true; syncSeason(false); }
+  }, 40);
+}
+function deriveChamps(){
+  champs = {};
+  D.seasons.forEach(function(sn){
+    if(sn.y === LIVE_Y) return; // the live season has no champion until it is over
+    let last = -1;
+    for(let gi = sn.g0; gi < sn.g1; gi++) if(D.ty[gi] === 4) last = gi;
+    if(last >= 0){
+      const hw = D.hp[last] > D.ap[last];
+      champs[sn.y] = {w:hw ? D.h[last] : D.a[last], l:hw ? D.a[last] : D.h[last]};
+    }
+  });
+}
+function fillSeasonSelect(){
+  const sel = $('#seasonSel'), keep = R.seasons[si] ? R.seasons[si].y : LIVE_Y;
+  sel.innerHTML = R.seasons.slice().reverse().map(function(s){ return '<option value="' + s.y + '">' + seasonLabel(s.y) + (s.y === LIVE_Y ? ' · live' : '') + '</option>'; }).join('');
+  sel.value = keep;
+}
+function fillTeamSelects(){
+  const rows = F.map(function(f){ const last = f.e[f.e.length - 1]; return {i:f.idx, n:last[2] + ' ' + last[3] + (f.cur ? '' : ' (defunct)')}; });
+  $('#hTeam').innerHTML = rows.map(function(r){ return '<option value="' + r.i + '">' + r.n + '</option>'; }).join('');
+  if(!$('#hTeam').dataset.set){ $('#hTeam').value = F.findIndex(function(f){ return f.k === 'LAL'; }); $('#hTeam').dataset.set = 1; }
+}
+function setSeason(i, keepPos){
+  si = i; const sn = cur();
+  $('#seasonSel').value = sn.y;
+  const sc = $('#scrub'); sc.max = sn.days.length;
+  pos = sn.days.length;
+  sc.value = pos;
+  try{ history.replaceState(null, '', '#' + sn.y); }catch(e){}
+  const gt = $('#gTeam'), keep = gt.value;
+  gt.innerHTML = '<option value="">All teams</option>' + sn.teams.map(function(f){ return '<option value="' + f + '">' + tname(f, sn.y) + '</option>'; }).join('');
+  if(keep && sn.teams.indexOf(+keep) >= 0) gt.value = keep;
+  gShown = 250;
+}
+
+// ---------- ratings tab ----------
+function seasonFacts(){
+  const sn = cur(), y = sn.y, ch = champs[y], live = y === LIVE_Y;
+  let t = '<b>' + sn.nT + ' teams</b> · home edge <b>' + sn.hca + '</b> pts · ' + (live ? '<b>season in progress</b>' : ch ? 'champion <b>' + tname(ch.w, y) + '</b>' : 'no playoff data');
+  if(sn.entered.length && R.seasons.indexOf(sn) > 0) t += '<br>Entered: ' + sn.entered.map(function(f){ return tname(f, y); }).join(', ') + (sn.newRating != null ? ' at ' + sn.newRating.toFixed(0) : '');
+  if(sn.left.length) t += '<br>Left: ' + sn.left.map(function(f){ return tname(f, y - 1); }).join(', ') + '; all teams shifted ' + sgn(sn.shift, 1);
+  else if(Math.abs(sn.shift) > 0.05) t += '<br>All teams shifted ' + sgn(sn.shift, 1) + ' to restore the 1500 average';
+  $('#facts').innerHTML = t;
+  $('#liveStatus').hidden = !live;
+}
+function dayLimit(){ const sn = cur(); return pos === 0 ? -1 : sn.days[pos - 1]; }
+function whenText(){ const sn = cur(); return pos === 0 ? 'Season start' : fmtDate(dayToIso(sn.days[pos - 1])); }
+function renderCourt(){
+  const sn = cur(), lim = dayLimit(); let tot = 0, done = 0;
+  for(let gi = sn.g0; gi < sn.g1; gi++) if(R.used[gi]){ tot++; if(D.day[gi] <= lim) done++; }
+  if(sn.y === LIVE_Y) tot = Math.max(tot, LG.length);
+  const c = $('#court');
+  c.style.setProperty('--f', (tot ? done / tot : 0).toFixed(4));
+  c.setAttribute('aria-label', 'Season progress: ' + done + ' of ' + tot + ' games played');
+  $('#courtTxt').innerHTML = '<strong>' + fmtInt(done) + '</strong> of ' + fmtInt(tot) + ' games played';
+}
+function renderRatings(){
+  const sn = cur(), nT = sn.nT, y = sn.y, lim = dayLimit();
+  $('#when').textContent = whenText();
+  const loc = {}; sn.teams.forEach(function(f, l){ loc[f] = l; });
+  const rw = new Array(nT).fill(0), rl = new Array(nT).fill(0), pw = new Array(nT).fill(0), pl = new Array(nT).fill(0);
+  for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(!R.used[gi] || D.day[gi] > lim) continue;
+    const t = D.ty[gi], hw = D.hp[gi] > D.ap[gi], h = loc[D.h[gi]], a = loc[D.a[gi]];
+    if(t <= 1){ if(hw){ rw[h]++; rl[a]++; } else { rw[a]++; rl[h]++; } }
+    else if(t >= 3){ if(hw){ pw[h]++; pl[a]++; } else { pw[a]++; pl[h]++; } }
+  }
+  const rows = sn.teams.map(function(f, l){
+    const rating = pos === 0 ? sn.startRating[l] : sn.rate[(pos - 1) * nT + l];
+    const rd = pos === 0 ? sn.startRD[l] : sn.rd[(pos - 1) * nT + l];
+    const ser = [sn.startRating[l]]; for(let p = 0; p < pos; p++) ser.push(sn.rate[p * nT + l]);
+    return {f:f, l:l, name:tname(f, y), rating:rating, rd:rd, dlt:rating - sn.startRating[l], w:rw[l] + rl[l] ? rw[l] / (rw[l] + rl[l]) + rw[l] * 1e-4 : -1, rw:rw[l], rl:rl[l], pw:pw[l], pl:pl[l],
+      hiR:sn.hiR[l], loR:sn.loR[l], ser:ser};
+  });
+  const order = rows.slice().sort(function(a, b){ return b.rating - a.rating; }), rank = {};
+  order.forEach(function(r, i){ rank[r.f] = i + 1; });
+  const k = sort.ratings.key, d = sort.ratings.dir;
+  rows.sort(function(a, b){
+    const x = a[k], z = b[k];
+    if(typeof x === 'string') return d * x.localeCompare(z);
+    return d * (x - z) || (b.rating - a.rating);
+  });
+  let mn = Infinity, mx = -Infinity;
+  rows.forEach(function(r){ if(r.rating < mn) mn = r.rating; if(r.rating > mx) mx = r.rating; });
+  const span = Math.max(60, mx - mn), ch = champs[y];
+  $('#ratingsTbl tbody').innerHTML = rows.map(function(r){
+    const c = F[r.f].c, barW = Math.round(10 + 90 * (r.rating - mn) / span), cls = r.dlt > 0.05 ? 'up' : r.dlt < -0.05 ? 'down' : 'mut';
+    const star = ch && ch.w === r.f && pos === sn.days.length ? ' <span title="Champion">🏆</span>' : '';
+    return '<tr data-f="' + r.f + '"><td class="rk">' + rank[r.f] + '</td><td class="l">' + badge(r.f, y) + '<span class="hide-s">' + r.name + '</span>' + star + '</td>' +
+      '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + r.rating.toFixed(0) + '</b><span class="rbar"><i style="width:' + barW + '%"></i></span></td>' +
+      '<td class="' + cls + '">' + sgn(r.dlt, 1) + '</td><td class="mut hide-s">' + r.rd.toFixed(0) + '</td>' +
+      '<td>' + r.rw + '-' + r.rl + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
+      '<td class="hide-s">' + sparkline(r.ser) + '</td></tr>';
+  }).join('');
+  renderProj();
+  renderCourt();
+}
+
+
+// ---------- projections and team detail ----------
+const GAMES82 = LEAGUE.games;
+function isLiveView(){ return cur().y === LIVE_Y; }
+function projection(){
+  const st = R.state, rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
+  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
+  LG.forEach(function(g){
+    if(!inStandings(g)) return;
+    const h = FK[g.home], a = FK[g.away]; if(!P[h] || !P[a]) return;
+    P[h].sosAS += rat(a); P[h].sosAN++; P[a].sosAS += rat(h); P[a].sosAN++;
+    if(isPlayed(g)){
+      const hw = g.hPts > g.aPts; P[h][hw ? 'w' : 'l']++; P[a][hw ? 'l' : 'w']++;
+    } else {
+      const p = liveProb(g.home, g.away, g.neu);
+      P[h].left++; P[a].left++; P[h].ew += p; P[a].ew += 1 - p;
+      P[h].sosS += rat(a); P[h].sosN++; P[a].sosS += rat(h); P[a].sosN++;
+      P[h].upc.push({date:g.date, opp:a, home:true, p:p, type:g.type}); P[a].upc.push({date:g.date, opp:h, home:false, p:1 - p, type:g.type});
+    }
+  });
+  CUR_IDX.forEach(function(f){
+    const x = P[f]; x.rating = rat(f);
+    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.left);
+    const avg = x.left ? x.ew / x.left : 0.5;
+    x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
+    x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
+    x.sosRest = x.sosN > 0; x.sos = x.sosN ? x.sosS / x.sosN : (x.sosAN ? x.sosAS / x.sosAN : NaN);
+    x.conf = GROUP_OF[F[f].k].id;
+    x.upc.sort(function(p, q){ return p.date < q.date ? -1 : 1; });
+  });
+  return P;
+}
+const f1 = function(v){ return v.toFixed(1); };
+function renderProj(){
+  const on = isLiveView() && pos === cur().days.length;
+  $('#projWrap').hidden = !on; $('#ratingsTbl').parentNode.hidden = on;
+  if(!on) return;
+  const P = projection(), sn = cur(), view = $('#projView').value;
+  const list = CUR_IDX.map(function(f){ return P[f]; });
+  const ovr = list.slice().sort(function(a, b){ return b.rating - a.rating; }), rk = {}; ovr.forEach(function(x, i){ rk[x.f] = i + 1; });
+  const byProj = function(a, b){ return b.projW - a.projW || b.rating - a.rating; };
+  const row = function(x, n){
+    const c = F[x.f].c;
+    return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span></td>' +
+      '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + x.rating.toFixed(0) + '</b></td>' +
+      '<td>' + x.w + '-' + x.l + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td>' +
+      '<td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td><td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
+  };
+  let html = '';
+  if(view === 'conf' && GROUPS.length > 1){
+    GROUPS.forEach(function(gr){
+      const cf = gr.id;
+      html += '<tr class="grp"><td colspan="7">' + gr.label + ' ' + LEAGUE.groupWord + '</td></tr>';
+      list.filter(function(x){ return x.conf === cf; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
+    });
+  } else list.slice().sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
+  $('#projTbl tbody').innerHTML = html;
+  const unsched = list[0].unsched;
+  $('#projNote').textContent = (list[0].rest === 0 ? 'Regular season complete: ranked by final record.' : 'Ranked by expected final wins.') + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
+}
+function ratingAt(sn, l, day){ // rating after the last rating period on or before `day`
+  let v = sn.startRating[l];
+  for(let p = 0; p < sn.days.length && sn.days[p] <= day; p++) v = sn.rate[p * sn.nT + l];
+  return v;
+}
+function openTeam(f, noPush){
+  const sn = cur(), y = sn.y, nT = sn.nT, l = sn.teams.indexOf(f); if(l < 0) return;
+  const lim = dayLimit(), live = isLiveView() && pos === sn.days.length;
+  const dStart = sn.days.length ? sn.days[0] - 1 : (LG.length ? isoToDay(LG[0].date) - 1 : 0);
+  const pts = [{d:dStart, r:sn.startRating[l], rd:sn.startRD[l]}];
+  for(let p = 0; p < pos; p++) pts.push({d:sn.days[p], r:sn.rate[p * nT + l], rd:sn.rd[p * nT + l]});
+  const now = pts[pts.length - 1], last = pos === 0 ? dStart : sn.days[pos - 1];
+  const ord = []; sn.teams.forEach(function(g, k){ ord.push({f:g, r:pos === 0 ? sn.startRating[k] : sn.rate[(pos - 1) * nT + k]}); });
+  ord.sort(function(a, b){ return b.r - a.r; });
+  const rank = ord.findIndex(function(x){ return x.f === f; }) + 1;
+  const dSeason = now.r - pts[0].r, dMonth = now.r - ratingAt(sn, l, last - 30), dWeek = now.r - ratingAt(sn, l, last - 7);
+  // games
+  let w = 0, lo = 0; const lastGames = [];
+  for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(!R.used[gi] || D.day[gi] > lim || (D.h[gi] !== f && D.a[gi] !== f)) continue;
+    const home = D.h[gi] === f, win = home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi];
+    if(D.ty[gi] <= 1){ if(win) w++; else lo++; }
+    lastGames.push({gi:gi, home:home, win:win, opp:home ? D.a[gi] : D.h[gi]});
+  }
+  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length;
+  const sg = function(v){ return '<b class="' + (v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut') + '">' + sgn(v, 1) + '</b>'; };
+  let proj = null; if(live){ proj = projection()[f]; }
+  let h = '<div class="td-h">' + badge(f, y) + '<h2>' + tname(f, y) + '</h2></div>' +
+    '<p class="td-sub">' + seasonLabel(y) + ' · as of ' + (pos === 0 ? 'season start' : fmtDate(dayToIso(last))) + ' · ' + (CUR_CONF(f) ? CUR_CONF(f) + ' · ' : '') + '#' + rank + ' of ' + nT + ' by rating</p>' +
+    '<div class="tiles">' +
+    '<div class="tile"><b>' + now.r.toFixed(0) + '</b><span>Rating</span></div>' +
+    '<div class="tile"><b>±' + now.rd.toFixed(0) + '</b><span>RD (uncertainty)</span></div>' +
+    '<div class="tile">' + sg(dSeason) + '<span>Δ season</span></div>' +
+    '<div class="tile">' + sg(dMonth) + '<span>Δ last 30 days</span></div>' +
+    '<div class="tile">' + sg(dWeek) + '<span>Δ last 7 days</span></div>' +
+    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w) + '</b><span>Last ' + l10.length + '</span></div>' +
+    '<div class="tile"><b>' + w + '-' + lo + '</b><span>Record</span></div>' +
+    (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>' + (proj.rest > 0 ? 'Projected final' : 'Regular season') + '</span></div>' +
+      (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' : '') +
+      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, ' + (proj.sosRest ? 'remaining' : 'season') + '</span></div>' : '') +
+    '</div>' +
+    '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
+    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : 'l') + '">' + (x.win ? 'W' : 'L') + '</i>'; }).join('') + '</div>' +
+    '<table class="td-t"><tbody>' + l10.map(function(x){
+      const gi = x.gi, mine = x.home ? D.hp[gi] : D.ap[gi], theirs = x.home ? D.ap[gi] : D.hp[gi], dl = x.home ? R.dH[gi] : R.dA[gi];
+      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : 'down') + '">' + (x.win ? 'W' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  if(proj && proj.upc.length){
+    h += '<h3>Next games</h3><table class="td-t"><tbody>' + proj.upc.slice(0, 6).map(function(u){
+      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+  $('#tdBody').innerHTML = h;
+  drawChart($('#tdChart'), pts, y);
+  $('#teamDlg').hidden = false; $('#teamDlg').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  if(!noPush){ try{ history.pushState({dlg:1}, ''); }catch(e){} }
+}
+function CUR_CONF(f){ const g = GROUPS.length > 1 && F[f].cur ? GROUP_OF[F[f].k] : null; return g ? g.label.replace(/ern$/, '') : ''; }
+function closeTeam(fromPop){
+  if($('#teamDlg').hidden) return;
+  $('#teamDlg').hidden = true; document.body.style.overflow = '';
+  if(!fromPop && history.state && history.state.dlg){ try{ history.back(); }catch(e){} }
+}
+function drawChart(el, pts, y){
+  const W = 640, H = 260, L = 58, Rr = 14, T = 14, B = 34;
+  let mn = Infinity, mx = -Infinity; pts.forEach(function(p){ if(p.r < mn) mn = p.r; if(p.r > mx) mx = p.r; });
+  const pad = Math.max(8, (mx - mn) * 0.12); mn -= pad; mx += pad;
+  const d0 = pts[0].d, d1 = Math.max(pts[pts.length - 1].d, d0 + 1);
+  const X = function(d){ return L + (d - d0) / (d1 - d0) * (W - L - Rr); }, Y = function(r){ return T + (mx - r) / (mx - mn) * (H - T - B); };
+  let g = '';
+  for(let i = 0; i <= 4; i++){
+    const v = mn + (mx - mn) * i / 4, yy = Y(v);
+    g += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--line)"/><text x="' + (L - 8) + '" y="' + (yy + 7) + '" text-anchor="end" font-size="20" fill="var(--muted)">' + v.toFixed(0) + '</text>';
+  }
+  // month ticks
+  const seen = {}; let lastX = -99;
+  pts.forEach(function(p){
+    const iso = dayToIso(p.d), m = iso.slice(0, 7);
+    if(seen[m]) return; seen[m] = 1;
+    const x = X(p.d); if(x - lastX < 70) return; lastX = x;
+    g += '<text x="' + x + '" y="' + (H - 8) + '" font-size="20" fill="var(--muted)" text-anchor="middle">' + MONTHS[+iso.slice(5, 7) - 1] + '</text>';
+  });
+  const y0 = Y(pts[0].r);
+  g += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--muted)" stroke-dasharray="4 4" opacity=".6"/>';
+  g += '<polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" points="' + pts.map(function(p){ return X(p.d).toFixed(1) + ',' + Y(p.r).toFixed(1); }).join(' ') + '"/>';
+  const lp = pts[pts.length - 1];
+  g += '<circle cx="' + X(lp.d) + '" cy="' + Y(lp.r) + '" r="4.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>';
+  g += '<g id="tdCur" hidden><line id="tdV" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--muted)"/><circle id="tdDot" r="5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/></g>';
+  el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Rating through the season">' + g + '</svg><div class="tip" hidden></div>';
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), cg = svg.querySelector('#tdCur');
+  const move = function(e){
+    const bb = svg.getBoundingClientRect(), cx = (e.clientX - bb.left) / bb.width * W;
+    let best = 0, bd = 1e9; pts.forEach(function(p, i){ const dd = Math.abs(X(p.d) - cx); if(dd < bd){ bd = dd; best = i; } });
+    const p = pts[best], px = X(p.d), py = Y(p.r);
+    cg.removeAttribute('hidden'); svg.querySelector('#tdV').setAttribute('x1', px); svg.querySelector('#tdV').setAttribute('x2', px);
+    const dot = svg.querySelector('#tdDot'); dot.setAttribute('cx', px); dot.setAttribute('cy', py);
+    tip.hidden = false; tip.textContent = (best === 0 ? 'Season start' : fmtDate(dayToIso(p.d))) + ' · ' + p.r.toFixed(0) + ' (±' + p.rd.toFixed(0) + ')';
+    tip.style.left = Math.max(70, Math.min(bb.width - 70, px / W * bb.width)) + 'px'; tip.style.top = (py / H * bb.height) + 'px';
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', function(){ tip.hidden = true; cg.setAttribute('hidden', ''); });
+}
+$('#projView').addEventListener('change', renderProj);
+[$('#ratingsTbl tbody'), $('#projTbl tbody')].forEach(function(tb){
+  tb.addEventListener('click', function(e){ const tr = e.target.closest('tr[data-f]'); if(tr) openTeam(+tr.dataset.f); });
+});
+$('#tdClose').addEventListener('click', function(){ closeTeam(false); });
+$('#teamDlg').addEventListener('click', function(e){ if(e.target === this) closeTeam(false); });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeTeam(false); });
+window.addEventListener('popstate', function(){ closeTeam(true); });
+
+// ---------- games tab ----------
+function renderGames(){
+  const isLive = cur().y === LIVE_Y;
+  $('#gHist').hidden = isLive; $('#gLive').hidden = !isLive;
+  $$('.liveonly').forEach(function(el){ el.hidden = !isLive; });
+  if(isLive) return renderLiveGames();
+  const sn = cur(), y = sn.y, team = $('#gTeam').value, type = $('#gType').value;
+  const list = [];
+  for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(!R.used[gi]) continue;
+    if(team && D.a[gi] !== +team && D.h[gi] !== +team) continue;
+    if(type && TYPE_LETTERS[D.ty[gi]] !== type) continue;
+    list.push(gi);
+  }
+  $('#gCount').textContent = fmtInt(list.length) + ' games';
+  let html = '', last = -1;
+  list.slice(0, gShown).forEach(function(gi){
+    const day = D.day[gi];
+    if(day !== last){ html += '<tr class="dh"><td colspan="10">' + fmtDate(dayToIso(day)) + '</td></tr>'; last = day; }
+    const hw = D.hp[gi] > D.ap[gi], p = R.pH[gi];
+    const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
+    html += '<tr><td class="mut l">' + dayToIso(day).slice(5) + '</td><td class="l hide-s">' + typePill(gi) + '</td>' +
+      '<td class="t">' + badge(D.a[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.a[gi]], y).nick + '</span></td><td' + (hw ? ' class="mut"' : ' style="font-weight:700"') + '>' + D.ap[gi] + '</td>' +
+      '<td class="at">' + (D.neu[gi] ? 'vs' : '@') + '</td><td' + (hw ? ' style="font-weight:700"' : ' class="mut"') + '>' + D.hp[gi] + '</td>' +
+      '<td class="t">' + badge(D.h[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.h[gi]], y).nick + '</span></td>' +
+      '<td class="mut">' + (p * 100).toFixed(0) + '%</td><td class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</td><td class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</td></tr>';
+  });
+  $('#gamesTbl tbody').innerHTML = html || '<tr><td colspan="10" class="mut l">No games.</td></tr>';
+  $('#gMore').hidden = list.length <= gShown;
+}
+
+// ---------- records tab ----------
+function renderRecords(){
+  recRows = F.map(function(f){
+    const last = f.e[f.e.length - 1], hi = R.hi[f.idx], lo = R.lo[f.idx];
+    return {f:f.idx, name:last[2] + ' ' + last[3], hiR:hi ? hi.r : -1, loR:lo ? lo.r : 1e9, hi:hi, lo:lo, cur:f.cur};
+  });
+  const k = sort.rec.key, d = sort.rec.dir;
+  recRows.sort(function(a, b){
+    const x = a[k], y = b[k];
+    if(typeof x === 'string') return d * x.localeCompare(y);
+    return d * (x - y);
+  });
+  $('#recTbl tbody').innerHTML = recRows.map(function(r){
+    const f = F[r.f], c = f.c, t = lum(c[0]) > 0.19 ? '#0B1220' : '#FFFFFF', last = f.e[f.e.length - 1];
+    const bd = '<span class="tb" style="--p:' + c[0] + ';--s:' + c[1] + ';--t:' + t + '">' + last[1] + '</span>';
+    return '<tr><td class="l">' + bd + r.name + (f.cur ? '' : ' <span class="mut">(defunct)</span>') + '</td>' +
+      '<td class="rt hl" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + (r.hi ? r.hiR.toFixed(0) : '–') + '</b></td>' + recDesc(r.hi, r.f) +
+      '<td class="rt hl" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + (r.lo ? r.loR.toFixed(0) : '–') + '</b></td>' + recDesc(r.lo, r.f) + '</tr>';
+  }).join('');
+  renderHistChart();
+}
+function renderHistChart(){
+  const f = +$('#hTeam').value, fr = F[f], svg = $('#hChart');
+  const pts = [];
+  R.seasons.forEach(function(sn){ const l = sn.teams.indexOf(f); if(l >= 0) pts.push({y:sn.y, r:sn.endRating[l]}); });
+  if(!pts.length){ svg.innerHTML = ''; return; }
+  const hi = R.hi[f], lo = R.lo[f], W = 900, H = 300, L = 44, Rr = 14, T = 14, B = 28;
+  let mn = Math.min.apply(null, pts.map(function(p){ return p.r; }).concat([lo ? lo.r : 1500, 1500])), mx = Math.max.apply(null, pts.map(function(p){ return p.r; }).concat([hi ? hi.r : 1500, 1500]));
+  mn = Math.floor((mn - 20) / 50) * 50; mx = Math.ceil((mx + 20) / 50) * 50;
+  const y0 = R.seasons[0].y, y1 = R.seasons[R.seasons.length - 1].y;
+  const X = function(y){ return L + (y - y0) / (y1 - y0) * (W - L - Rr); };
+  const Y = function(v){ return T + (1 - (v - mn) / (mx - mn)) * (H - T - B); };
+  let s = '';
+  for(let v = mn; v <= mx; v += 50) s += '<line class="gl" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+  for(let yy = Math.ceil(y0 / 10) * 10; yy <= y1; yy += 10) s += '<text x="' + X(yy) + '" y="' + (H - 8) + '" text-anchor="middle">' + seasonLabel(yy).slice(0, 4).replace(/^(\d{3})(\d)$/, '$1$2') + '</text>';
+  s += '<line class="avg" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(1500) + '" y2="' + Y(1500) + '"/>';
+  let seg = [];
+  const flush = function(){ if(seg.length > 1) s += '<polyline class="ln" points="' + seg.join(' ') + '"/>'; seg = []; };
+  pts.forEach(function(p, i){
+    if(i > 0 && p.y !== pts[i - 1].y + 1) flush();
+    seg.push(X(p.y).toFixed(1) + ',' + Y(p.r).toFixed(1));
+  });
+  flush();
+  pts.forEach(function(p){
+    const ch = champs[p.y] && champs[p.y].w === f;
+    if(ch) s += '<circle class="tt" cx="' + X(p.y).toFixed(1) + '" cy="' + Y(p.r).toFixed(1) + '" r="6.5"/>';
+    s += '<circle class="pt" cx="' + X(p.y).toFixed(1) + '" cy="' + Y(p.r).toFixed(1) + '" r="3"><title>' + seasonLabel(p.y) + ': ' + p.r.toFixed(0) + (ch ? ' (champion)' : '') + '</title></circle>';
+  });
+  if(hi) s += '<circle class="hi" cx="' + X(hi.y).toFixed(1) + '" cy="' + Y(hi.r).toFixed(1) + '" r="5.5"><title>High ' + hi.r.toFixed(0) + ', ' + fmtDate(dayToIso(D.day[hi.gi])) + ': ' + gameText(hi.gi, f) + '</title></circle>';
+  if(lo) s += '<circle class="lo" cx="' + X(lo.y).toFixed(1) + '" cy="' + Y(lo.r).toFixed(1) + '" r="5.5"><title>Low ' + lo.r.toFixed(0) + ', ' + fmtDate(dayToIso(D.day[lo.gi])) + ': ' + gameText(lo.gi, f) + '</title></circle>';
+  svg.innerHTML = s;
+  const titles = pts.filter(function(p){ return champs[p.y] && champs[p.y].w === f; }).length;
+  $('#hInfo').textContent = seasonLabel(pts[0].y) + ' to ' + seasonLabel(pts[pts.length - 1].y) + ' · ' + pts.length + ' seasons · ' + titles + ' title' + (titles === 1 ? '' : 's');
+}
+
+// ---------- seasons tab ----------
+function renderSeasons(){
+  const rows = R.seasons.slice().reverse().map(function(sn){
+    const y = sn.y, ch = champs[y], nT = sn.nT;
+    let rankTxt = '–', topRS = '–', topEnd = '–';
+    if(sn.rsEnd >= 0){
+      const arr = sn.teams.map(function(f, l){ return {f:f, r:sn.rate[sn.rsEnd * nT + l]}; }).sort(function(a, b){ return b.r - a.r; });
+      topRS = badge(arr[0].f, y) + arr[0].r.toFixed(0);
+      if(ch){ const k = arr.findIndex(function(a){ return a.f === ch.w; }); rankTxt = k >= 0 ? String(k + 1) : '–'; }
+    }
+    const end = sn.teams.map(function(f, l){ return {f:f, r:sn.endRating[l]}; }).sort(function(a, b){ return b.r - a.r; });
+    topEnd = badge(end[0].f, y) + end[0].r.toFixed(0);
+    const ent = R.seasons.indexOf(sn) === 0 ? 'All' : sn.entered.map(function(f){ return badge(f, y); }).join('') || '–';
+    const lft = sn.left.map(function(f){ return badge(f, y - 1); }).join('') || '–';
+    return '<tr class="clk" data-y="' + y + '"><td class="l"><b>' + seasonLabel(y) + '</b></td><td class="l">' + (ch ? badge(ch.w, y) + eraOf(F[ch.w], y).nick : '–') + '</td><td>' + rankTxt + '</td>' +
+      '<td class="l">' + topRS + '</td><td class="l">' + topEnd + '</td><td>' + nT + '</td><td class="l hide-s">' + ent + '</td><td class="l hide-s">' + lft + '</td>' +
+      '<td class="mut">' + (Math.abs(sn.shift) > 0.05 ? sgn(sn.shift, 1) : '–') + '</td><td class="mut">' + sn.hca + '</td><td class="mut">' + (sn.met.n ? (sn.met.acc / sn.met.n * 100).toFixed(1) + '%' : '–') + '</td></tr>';
+  });
+  $('#seasonsTbl tbody').innerHTML = rows.join('');
+}
+
+// ---------- settings ----------
+function fillSettings(){
+  $$('#setForm [data-k]').forEach(function(el){
+    const k = el.dataset.k;
+    if(el.type === 'checkbox') el.checked = !!S[k]; else el.value = S[k];
+  });
+  $$('[data-t]').forEach(function(el){ el.checked = !!S.types[el.dataset.t]; });
+  $('#sHca').disabled = S.hcaMode !== 'fixed';
+}
+function renderMetrics(){
+  const T = R.total;
+  $('#metTbl tbody').innerHTML =
+    '<tr><td class="l">Games rated</td><td>' + fmtInt(T.n) + '</td></tr>' +
+    '<tr><td class="l">Home-win accuracy</td><td>' + (T.acc / T.n * 100).toFixed(2) + '%</td></tr>' +
+    '<tr><td class="l">Log loss</td><td>' + (T.ll / T.n).toFixed(4) + '</td></tr>' +
+    '<tr><td class="l">Brier score</td><td>' + (T.br / T.n).toFixed(4) + '</td></tr>';
+}
+function readSettings(){
+  $$('#setForm [data-k]').forEach(function(el){
+    const k = el.dataset.k;
+    if(el.type === 'checkbox') S[k] = el.checked;
+    else if(el.type === 'number'){ const v = parseFloat(el.value); if(isFinite(v)) S[k] = v; }
+    else S[k] = el.value;
+  });
+  $$('[data-t]').forEach(function(el){ S.types[el.dataset.t] = el.checked ? 1 : 0; });
+}
+
+function renderAll(){
+  seasonFacts(); renderRatings(); renderGames(); renderRecords(); renderSeasons(); renderMetrics(); fillSettings(); updateSimInfo(); updateLiveStatus();
+}
+function openTab(t){
+  tab = t;
+  $$('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === t); });
+  ['ratings', 'games', 'sim', 'add', 'records', 'seasons', 'settings'].forEach(function(x){ $('#tab-' + x).hidden = x !== t; });
+}
+function goSeason(i){
+  if(i < 0 || i >= R.seasons.length) return;
+  setSeason(i); seasonFacts(); renderRatings(); renderGames();
+}
+
+// ---------- events ----------
+$('#tabs').addEventListener('click', function(e){ const b = e.target.closest('button'); if(b) openTab(b.dataset.tab); });
+$('#seasonSel').addEventListener('change', function(){ const y = +this.value; goSeason(R.seasons.findIndex(function(s){ return s.y === y; })); });
+$('#prevS').addEventListener('click', function(){ goSeason(si - 1); });
+$('#nextS').addEventListener('click', function(){ goSeason(si + 1); });
+$('#scrub').addEventListener('input', function(){ pos = +this.value; renderRatings(); });
+function jumpTo(p){ pos = Math.max(0, Math.min(cur().days.length, p)); $('#scrub').value = pos; renderRatings(); }
+function firstPeriodOfType(types){
+  const sn = cur(); let best = -1;
+  for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(R.used[gi] && types.indexOf(D.ty[gi]) >= 0){ best = sn.days.indexOf(D.day[gi]); break; }
+  }
+  return best;
+}
+$('#jStart').addEventListener('click', function(){ jumpTo(0); });
+$('#jEnd').addEventListener('click', function(){ jumpTo(cur().days.length); });
+$('#jRS').addEventListener('click', function(){ const sn = cur(); jumpTo(sn.rsEnd >= 0 ? sn.rsEnd + 1 : sn.days.length); });
+$('#jPI').addEventListener('click', function(){ const p = firstPeriodOfType([3]); jumpTo(p >= 0 ? p : cur().days.length); });
+$('#jPO').addEventListener('click', function(){ const p = firstPeriodOfType([4]); jumpTo(p >= 0 ? p : cur().days.length); });
+$$('#ratingsTbl th.sortable').forEach(function(th){ th.addEventListener('click', function(){
+  const k = th.dataset.k; if(sort.ratings.key === k) sort.ratings.dir *= -1; else { sort.ratings.key = k; sort.ratings.dir = k === 'name' ? 1 : -1; }
+  renderRatings();
+}); });
+$$('#recTbl th.sortable').forEach(function(th){ th.addEventListener('click', function(){
+  const k = th.dataset.k; if(sort.rec.key === k) sort.rec.dir *= -1; else { sort.rec.key = k; sort.rec.dir = k === 'name' ? 1 : (k === 'loR' ? 1 : -1); }
+  renderRecords();
+}); });
+$('#gTeam').addEventListener('change', function(){ gShown = 250; lShown = 300; renderGames(); });
+$('#gType').addEventListener('change', function(){ gShown = 250; lShown = 300; renderGames(); });
+$('#gMore').addEventListener('click', function(){ if(cur().y === LIVE_Y) lShown += 500; else gShown += 500; renderGames(); });
+$('#hTeam').addEventListener('change', renderHistChart);
+$('#seasonsTbl tbody').addEventListener('click', function(e){
+  const tr = e.target.closest('tr'); if(!tr) return;
+  const y = +tr.dataset.y; goSeason(R.seasons.findIndex(function(s){ return s.y === y; })); openTab('ratings'); window.scrollTo(0, 0);
+});
+$('#setForm').addEventListener('change', function(){ $('#sHca').disabled = $('#sHcaMode').value !== 'fixed'; });
+$('#btnApply').addEventListener('click', function(){ readSettings(); saveSettings(); compute(); $('#setMsg').textContent = 'Recalculated.'; });
+$('#btnDefaults').addEventListener('click', function(){ S = JSON.parse(JSON.stringify(HIST_DEFAULTS)); saveSettings(); fillSettings(); compute(); $('#setMsg').textContent = 'Defaults restored.'; });
+
+// ================= live season (2026-27) =================
+const LIVE_KEY = LEAGUE.keys.live;
+const FK = {}; F.forEach(function(f){ FK[f.k] = f.idx; });
+const CUR_IDX = F.filter(function(f){ return f.cur; }).map(function(f){ return f.idx; });
+const GROUPS = LEAGUE.groups.map(function(g, i){ return {id:g.id, label:g.label, slot:['E', 'W'][i], teams:g.teams || CUR_IDX.map(function(x){ return F[x].k; })}; });
+const GROUP_OF = {}; GROUPS.forEach(function(g){ g.teams.forEach(function(k){ GROUP_OF[k] = g; }); });
+const TYPE_LIST = ['R', 'C', 'F', 'I', 'P'], TYPE_SHOW = TYPE_LIST.filter(function(c){ return c !== 'I' || LEAGUE.playin; });
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+let LG = loadLive(), liveGi = new Map(), liveStart = 0;
+let lShown = 300;
+
+function gkey(d, a, h){ return d + '|' + a + '|' + h; }
+function freshLive(){
+  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, src:'f', auto:has ? 1 : undefined}; });
+}
+function loadLive(){
+  try{
+    const raw = localStorage.getItem(LIVE_KEY);
+    if(raw){ const o = JSON.parse(raw); if(o && o.v === 1 && Array.isArray(o.games) && o.games.length) return o.games; }
+  }catch(e){}
+  return freshLive();
+}
+function saveLive(){ try{ localStorage.setItem(LIVE_KEY, JSON.stringify({v:1, games:LG})); }catch(e){} }
+function sortLive(){ LG.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); }
+function isoToDay(iso){ const p = iso.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]) / 86400000 - BASE_DAY; }
+const isPlayed = function(g){ return g.aPts != null && g.hPts != null && g.aPts !== g.hPts; };
+const inStandings = function(g){ return g.type === 'R' || g.type === 'C'; };
+
+function cat(T, a, b){ const o = new T(a.length + b.length); o.set(a); o.set(b, a.length); return o; }
+function computeLive(){
+  const played = LG.filter(isPlayed).sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  const str = played.map(function(g){
+    const t = TYPE_LIST.indexOf(g.type) >= 0 ? g.type : 'R';
+    return isoToDay(g.date).toString(36).padStart(3, '0') + LETTERS[FK[g.away]] + LETTERS[FK[g.home]] +
+      g.aPts.toString(36).padStart(2, '0') + g.hPts.toString(36).padStart(2, '0') + (g.neu ? t.toLowerCase() : t);
+  }).join('');
+  const g = {}; g[LIVE_Y] = str;
+  const D1 = decodeHistory({fr:HIST_DATA.fr, g:g});
+  const R1 = runHistory(D1, S, null, Object.assign({}, R0.state, {teams:CUR_IDX}));
+  const n0 = D0.n;
+  liveStart = n0; liveGi = new Map();
+  played.forEach(function(x, i){ liveGi.set(x.id, n0 + i); });
+  D = {F:F, n:n0 + D1.n, day:cat(Int32Array, D0.day, D1.day), a:cat(Uint8Array, D0.a, D1.a), h:cat(Uint8Array, D0.h, D1.h),
+       ap:cat(Int16Array, D0.ap, D1.ap), hp:cat(Int16Array, D0.hp, D1.hp), ty:cat(Uint8Array, D0.ty, D1.ty), neu:cat(Uint8Array, D0.neu, D1.neu),
+       season:cat(Int16Array, D0.season, D1.season),
+       seasons:D0.seasons.concat(D1.seasons.map(function(s){ return {y:s.y, g0:s.g0 + n0, g1:s.g1 + n0}; }))};
+  const shiftRec = function(x){ return x && x.y === LIVE_Y ? Object.assign({}, x, {gi:x.gi + n0}) : x; };
+  const sh = function(v){ return v >= 0 ? v + n0 : v; };
+  R = {S:R0.S, seasons:R0.seasons.concat(R1.seasons.map(function(s){
+      return Object.assign({}, s, {g0:s.g0 + n0, g1:s.g1 + n0, hiGi:s.hiGi.map(sh), loGi:s.loGi.map(sh)});
+    })),
+    pH:cat(Float32Array, R0.pH, R1.pH), dH:cat(Float32Array, R0.dH, R1.dH), dA:cat(Float32Array, R0.dA, R1.dA), used:cat(Uint8Array, R0.used, R1.used),
+    hi:R1.hi.map(shiftRec), lo:R1.lo.map(shiftRec), state:R1.state,
+    total:{n:R0.total.n + R1.total.n, ll:R0.total.ll + R1.total.ll, br:R0.total.br + R1.total.br, acc:R0.total.acc + R1.total.acc}};
+}
+// pre-game win probability of a (possibly unplayed) live game with the current ratings
+function liveProb(hK, aK, neu){
+  const st = R.state, sn = R.seasons[R.seasons.length - 1], h = FK[hK], a = FK[aK];
+  const d = (st.mu[h] + (neu ? 0 : sn.hca / Q)) - st.mu[a];
+  const e = 1 / (1 + Math.exp(-g(Math.sqrt(st.phi[h] * st.phi[h] + st.phi[a] * st.phi[a])) * d));
+  if(!S.useMov) return e;
+  const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd;
+  return normCdf(normInv(e) * kk);
+}
+function afterLiveChange(full){
+  const oldLen = cur().days.length, wasEnd = pos >= oldLen, wasLive = cur().y === LIVE_Y;
+  saveLive(); computeLive(); deriveChamps();
+  if(wasLive){ const n = cur().days.length; pos = wasEnd ? n : Math.min(pos, n); $('#scrub').max = n; $('#scrub').value = pos; }
+  seasonFacts(); renderRatings(); renderSeasons(); renderRecords(); renderMetrics();
+  if(full) renderLiveGames(); else updateLiveCells();
+  updateSimInfo(); updateLiveStatus();
+}
+function updateLiveStatus(){
+  const played = LG.filter(isPlayed).length, std = LG.filter(inStandings).length;
+  $('#liveStatus').innerHTML = '<b>' + fmtInt(played) + '</b> of ' + fmtInt(LG.length) + ' games played in ' + LEAGUE.liveLabel +
+    (std < LEAGUE.stdTotal ? ' · <span class="chip">' + fmtInt(LEAGUE.stdTotal - std) + ' ' + LEAGUE.missingChip + '</span>' : '');
+}
+
+// ---------- live games tab ----------
+function monthsLive(){ const m = {}; LG.forEach(function(g){ m[g.date.slice(0, 7)] = 1; }); return Object.keys(m).sort(); }
+const MFULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function fillLiveFilters(pickMonth){
+  const ms = monthsLive(), sel = $('#gMonth'), keep = pickMonth !== undefined ? pickMonth : sel.value;
+  sel.innerHTML = '<option value="">All months</option>' + ms.map(function(m){ return '<option value="' + m + '">' + MFULL[+m.slice(5) - 1] + ' ' + m.slice(0, 4) + '</option>'; }).join('');
+  if(keep && ms.indexOf(keep) >= 0) sel.value = keep;
+  else { const open = LG.filter(function(g){ return !isPlayed(g); })[0]; sel.value = open ? open.date.slice(0, 7) : ms[ms.length - 1]; }
+}
+function typeSelect(t){ return '<select class="ty" data-f="type">' + TYPE_SHOW.map(function(c){ return '<option value="' + c + '"' + (c === t ? ' selected' : '') + '>' + TYPE_NAMES[c] + '</option>'; }).join('') + '</select>'; }
+function liveFiltered(){
+  const team = $('#gTeam').value, type = $('#gType').value, m = $('#gMonth').value, st = $('#gStatus').value;
+  return LG.filter(function(g){
+    if(m && g.date.slice(0, 7) !== m) return false;
+    if(team && FK[g.away] !== +team && FK[g.home] !== +team) return false;
+    if(type && g.type !== type) return false;
+    const done = isPlayed(g);
+    if(st === 'open' && done) return false;
+    if(st === 'done' && !done) return false;
+    return true;
+  });
+}
+function liveCellsFor(g){
+  const gi = liveGi.get(g.id), done = gi !== undefined;
+  const p = done ? R.pH[gi] : liveProb(g.home, g.away, g.neu);
+  const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
+  return {pred:g.home + ' ' + Math.round(p * 100) + '%', w:Math.round(p * 100), done:done,
+    dl:done ? '<span class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</span> / <span class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</span>' : ''};
+}
+function renderLiveGames(){
+  const list = liveFiltered(), y = LIVE_Y;
+  $('#gCount').textContent = fmtInt(list.length) + ' games';
+  let html = '', last = '';
+  list.slice(0, lShown).forEach(function(g){
+    if(g.date !== last){ html += '<tr class="dh"><td colspan="10">' + fmtDate(g.date) + '</td></tr>'; last = g.date; }
+    const c = liveCellsFor(g), av = g.aPts == null ? '' : g.aPts, hv = g.hPts == null ? '' : g.hPts;
+    html += '<tr data-id="' + g.id + '"><td class="mut l hide-s">' + g.date.slice(5) + '</td><td class="l hide-s">' + typeSelect(g.type) + '</td>' +
+      '<td class="t">' + badge(FK[g.away], y) + '<span class="nick hide-s">' + eraOf(F[FK[g.away]], y).nick + '</span></td>' +
+      '<td><input class="sc" type="number" min="0" max="250" data-side="a" value="' + av + '" aria-label="Away points"></td><td class="at">' + (g.neu ? 'vs' : '@') + '</td>' +
+      '<td><input class="sc" type="number" min="0" max="250" data-side="h" value="' + hv + '" aria-label="Home points"></td>' +
+      '<td class="t">' + badge(FK[g.home], y) + '<span class="nick hide-s">' + eraOf(F[FK[g.home]], y).nick + '</span></td>' +
+      '<td class="pred' + (c.done ? ' done' : '') + '" style="--w:' + c.w + '%">' + c.pred + '</td><td class="dl hide-s">' + c.dl + '</td>' +
+      '<td class="hide-s"><button class="x" data-act="clr" title="Clear result">Clear</button><button class="x" data-act="del" title="Remove game">✕</button></td></tr>';
+  });
+  $('#gLiveBody').innerHTML = html || '<tr><td colspan="10" class="mut l">No games for this filter.</td></tr>';
+  $('#gMore').hidden = list.length <= lShown;
+}
+function updateLiveCells(){
+  const byId = {}; LG.forEach(function(g){ byId[g.id] = g; });
+  $$('#gLiveBody tr[data-id]').forEach(function(tr){
+    const g = byId[tr.getAttribute('data-id')]; if(!g) return;
+    const c = liveCellsFor(g), p = tr.querySelector('.pred'), d = tr.querySelector('.dl');
+    p.textContent = c.pred; p.className = 'pred' + (c.done ? ' done' : ''); p.style.setProperty('--w', c.w + '%'); d.innerHTML = c.dl;
+  });
+}
+function liveById(id){ return LG.filter(function(g){ return g.id === id; })[0]; }
+function onLiveInput(e){
+  const el = e.target, tr = el.closest('tr'); if(!tr) return;
+  const g = liveById(tr.getAttribute('data-id')); if(!g) return;
+  if(el.classList.contains('ty')){ g.type = el.value; g.typeEdited = 1; afterLiveChange(false); return; }
+  if(!el.classList.contains('sc')) return;
+  const ai = tr.querySelector('input[data-side=a]'), hi = tr.querySelector('input[data-side=h]');
+  const a = ptsOf(ai.value), h = ptsOf(hi.value);
+  if(a != null && h != null){ g.aPts = a; g.hPts = h; delete g.auto; const bad = a === h; ai.classList.toggle('bad', bad); hi.classList.toggle('bad', bad); }
+  else { g.aPts = null; g.hPts = null; delete g.auto; ai.classList.remove('bad'); hi.classList.remove('bad'); }
+  afterLiveChange(false);
+}
+function onLiveClick(e){
+  const b = e.target.closest('button'); if(!b) return;
+  const tr = b.closest('tr'), g = liveById(tr.getAttribute('data-id')); if(!g) return;
+  if(b.dataset.act === 'clr'){ g.aPts = null; g.hPts = null; delete g.auto; }
+  if(b.dataset.act === 'del'){ LG = LG.filter(function(q){ return q !== g; }); }
+  afterLiveChange(true);
+}
+function ptsOf(v){ return /^\d{1,3}$/.test(String(v == null ? '' : v).trim()) ? parseInt(v, 10) : null; }
+
+// ---------- add / import ----------
+function setMsg(sel, text, bad){ const el = $(sel); el.textContent = text; el.className = 'msg ' + (bad ? 'down' : 'up'); }
+function addGame(){
+  const date = $('#aDate').value, away = $('#aAway').value, home = $('#aHome').value, type = $('#aType').value, neu = $('#aNeu').checked ? 1 : 0;
+  const ap = $('#aAP').value.trim(), hp = $('#aHP').value.trim();
+  if(!date) return setMsg('#addMsg', 'Pick a date.', true);
+  if(away === home) return setMsg('#addMsg', 'Away and home must be different teams.', true);
+  let a = null, h = null;
+  if(ap !== '' || hp !== ''){
+    a = ptsOf(ap); h = ptsOf(hp);
+    if(a == null || h == null) return setMsg('#addMsg', 'Enter both scores, or leave both empty.', true);
+    if(a === h) return setMsg('#addMsg', LEAGUE.name + ' games cannot end tied; check the scores.', true);
+  }
+  const k = gkey(date, away, home), ex = liveById(k);
+  if(ex){ if(a != null){ ex.aPts = a; ex.hPts = h; } ex.type = type; if(neu) ex.neu = 1; }
+  else { LG.push({id:k, date:date, away:away, home:home, type:type, neu:neu, aPts:a, hPts:h, manual:true}); sortLive(); }
+  fillLiveFilters(date.slice(0, 7)); afterLiveChange(true);
+  setMsg('#addMsg', (ex ? 'Updated ' : 'Added ') + away + ' @ ' + home + ' on ' + date + ' (' + TYPE_NAMES[type] + ').');
+  $('#aAP').value = ''; $('#aHP').value = '';
+}
+function norm(s){ return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+const ALIAS = {};
+(function(){
+  const EXTRA = LEAGUE.alias;
+  F.filter(function(f){ return f.cur; }).forEach(function(f){
+    const e = f.e[f.e.length - 1];
+    [f.k, e[2] + ' ' + e[3], e[3]].concat(EXTRA[f.k] || []).forEach(function(a){ ALIAS[norm(a)] = f.k; });
+  });
+})();
+function resolveTeam(s){ return ALIAS[norm(s)] || null; }
+const MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+function parseDate(s){
+  s = String(s || '').trim();
+  let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1] + '-' + pad2(+m[2]) + '-' + pad2(+m[3]);
+  m = s.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})/);
+  if(m && MON[m[1].slice(0, 3).toLowerCase()]) return m[3] + '-' + pad2(MON[m[1].slice(0, 3).toLowerCase()]) + '-' + pad2(+m[2]);
+  m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m) return m[3] + '-' + pad2(+m[1]) + '-' + pad2(+m[2]);
+  return null;
+}
+function splitLine(line, delim){
+  const out = []; let c = '', q = false;
+  for(let i = 0; i < line.length; i++){
+    const ch = line[i];
+    if(q){ if(ch === '"'){ if(line[i + 1] === '"'){ c += '"'; i++; } else q = false; } else c += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === delim){ out.push(c); c = ''; }
+    else c += ch;
+  }
+  out.push(c);
+  return out.map(function(x){ return x.trim(); });
+}
+function typeFromText(s){
+  s = String(s || '').toLowerCase().trim(); if(!s) return null;
+  if(/^[rcfip]$/.test(s)) return s.toUpperCase();
+  if(LEAGUE.playin && /play-?in/.test(s)) return 'I';
+  if(LEAGUE.cupRe.test(s)) return (/(final|championship)/.test(s) && !/semi|quarter/.test(s)) ? 'F' : 'C';
+  if(/playoff|finals|round|conference|series/.test(s)) return 'P';
+  if(/regular/.test(s)) return 'R';
+  return null;
+}
+function parseSchedule(text){
+  const rows = [], errors = [];
+  const lines = String(text || '').replace(/\r/g, '').split('\n').filter(function(l){ return l.trim(); });
+  if(!lines.length) return {rows:rows, errors:['Nothing to import.']};
+  const delim = lines.some(function(l){ return l.indexOf('\t') >= 0; }) ? '\t' : ',';
+  let cols = null;
+  lines.forEach(function(line, idx){
+    const c = splitLine(line, delim), n = c.map(norm);
+    const awayIdx = n.findIndex(function(x){ return x.indexOf('visitor') === 0 || x === 'away' || x === 'awayteam'; });
+    const homeIdx = n.findIndex(function(x){ return x.indexOf('home') === 0 && x.indexOf('pts') < 0; });
+    if(n.indexOf('date') >= 0 && awayIdx >= 0 && homeIdx >= 0){
+      const ptsIdx = []; n.forEach(function(x, i){ if(x === 'pts') ptsIdx.push(i); });
+      cols = {date:n.indexOf('date'), away:awayIdx, home:homeIdx,
+        aP:n.indexOf('awaypts') >= 0 ? n.indexOf('awaypts') : (ptsIdx[0] != null ? ptsIdx[0] : -1),
+        hP:n.indexOf('homepts') >= 0 ? n.indexOf('homepts') : (ptsIdx[1] != null ? ptsIdx[1] : -1),
+        ty:n.indexOf('type') >= 0 ? n.indexOf('type') : n.indexOf('notes')};
+      return;
+    }
+    let cc = cols;
+    if(!cc){
+      if(c[1] && /\d{1,2}:\d{2}\s*[ap]/i.test(c[1])) cc = {date:0, away:2, aP:3, home:4, hP:5, ty:-1};
+      else cc = {date:0, away:1, home:2, aP:3, hP:4, ty:5};
+    }
+    const date = parseDate(c[cc.date]), away = resolveTeam(c[cc.away]), home = resolveTeam(c[cc.home]);
+    if(!date || !away || !home){
+      if(errors.length < 5) errors.push('Line ' + (idx + 1) + ' skipped: ' + line.slice(0, 70));
+      else if(errors.length === 5) errors.push('...and more skipped lines.');
+      return;
+    }
+    if(away === home){ if(errors.length < 5) errors.push('Line ' + (idx + 1) + ': same team on both sides.'); return; }
+    let aPts = cc.aP >= 0 ? ptsOf(c[cc.aP]) : null, hPts = cc.hP >= 0 ? ptsOf(c[cc.hP]) : null;
+    if(aPts == null || hPts == null){ aPts = null; hPts = null; }
+    rows.push({date:date, away:away, home:home, aPts:aPts, hPts:hPts, type:cc.ty >= 0 ? typeFromText(c[cc.ty]) : null});
+  });
+  return {rows:rows, errors:errors};
+}
+function lastRsDate(){ let d = ''; LG.forEach(function(g){ if(g.type === 'R' && g.date > d) d = g.date; }); return d; }
+function mergeRows(rows, deflt){
+  const idx = new Map(); LG.forEach(function(x){ idx.set(x.id, x); });
+  const rsEnd = lastRsDate(); let added = 0, updated = 0;
+  rows.forEach(function(r){
+    const k = gkey(r.date, r.away, r.home), ex = idx.get(k);
+    const type = r.type || (deflt !== 'auto' ? deflt : (r.date > rsEnd ? 'P' : 'R'));
+    if(ex){
+      let ch = false;
+      if(r.aPts != null && (ex.aPts !== r.aPts || ex.hPts !== r.hPts)){ ex.aPts = r.aPts; ex.hPts = r.hPts; ch = true; }
+      if(r.type && ex.type !== r.type){ ex.type = r.type; ch = true; }
+      if(r.neu && !ex.neu){ ex.neu = 1; ch = true; }
+      if(ch) updated++;
+    } else {
+      const ng = {id:k, date:r.date, away:r.away, home:r.home, type:type, neu:r.neu ? 1 : 0, aPts:r.aPts, hPts:r.hPts, manual:true};
+      LG.push(ng); idx.set(k, ng); added++;
+    }
+  });
+  sortLive();
+  return {added:added, updated:updated};
+}
+function readFile(f){ return new Promise(function(res){ const r = new FileReader(); r.onload = function(){ res(String(r.result)); }; r.onerror = function(){ res(''); }; r.readAsText(f); }); }
+async function doImport(){
+  const texts = [], t = $('#iText').value.trim(); if(t) texts.push(t);
+  const files = Array.from($('#fFiles').files || []);
+  for(const f of files) texts.push(await readFile(f));
+  if(!texts.length) return setMsg('#impMsg', 'Choose a file or paste some text first.', true);
+  let rows = [], errors = [];
+  texts.forEach(function(tx){ const r = parseSchedule(tx); rows = rows.concat(r.rows); errors = errors.concat(r.errors); });
+  if(!rows.length) return setMsg('#impMsg', 'No games recognised. ' + errors.slice(0, 3).join(' | '), true);
+  const r = mergeRows(rows, $('#iType').value);
+  fillLiveFilters(); afterLiveChange(true);
+  let msg = 'Read ' + rows.length + ' games: ' + r.added + ' new, ' + r.updated + ' updated.';
+  if(errors.length) msg += ' ' + errors.length + ' note(s): ' + errors.slice(0, 3).join(' | ');
+  setMsg('#impMsg', msg, false);
+  $('#iText').value = ''; $('#fFiles').value = '';
+}
+
+// ---------- automatic updates from data/season.json ----------
+let lastSync = 0;
+function mergeFile(file){
+  const rows = file.games || [], idx = new Map(), fileIds = new Set();
+  LG.forEach(function(g){ idx.set(g.id, g); });
+  let added = 0, filled = 0, removed = 0;
+  rows.forEach(function(r){
+    const id = gkey(r[0], r[1], r[2]); fileIds.add(id);
+    if(FK[r[1]] === undefined || FK[r[2]] === undefined) return;
+    let g = idx.get(id);
+    if(!g){ g = {id:id, date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:null, hPts:null, src:'f'}; LG.push(g); idx.set(id, g); added++; }
+    else { if(!g.typeEdited) g.type = r[3]; if(r[4]) g.neu = 1; if(!g.src && !g.manual) g.src = 'f'; }
+    if(r[5] != null && r[6] != null && r[5] !== r[6] && (g.aPts == null || g.auto)){
+      if(g.aPts !== r[5] || g.hPts !== r[6]) filled++;
+      g.aPts = r[5]; g.hPts = r[6]; g.auto = 1;
+    }
+  });
+  if(rows.length >= 1000){
+    const before = LG.length;
+    LG = LG.filter(function(g){ return !(g.src === 'f' && g.aPts == null && !fileIds.has(g.id)); });
+    removed = before - LG.length;
+  }
+  sortLive();
+  return {added:added, filled:filled, removed:removed, games:rows.length};
+}
+function fmtStamp(iso){ try{ return new Date(iso).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}); }catch(e){ return iso; } }
+async function syncSeason(manual){
+  const el = $('#autoStatus'); lastSync = Date.now();
+  if(manual) el.textContent = 'Checking…';
+  try{
+    const resp = await fetch(LEAGUE.liveFile + '?t=' + Date.now(), {cache:'no-store'});
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const file = await resp.json();
+    if(!file || file.season !== LIVE_Y || !Array.isArray(file.games)) throw new Error('unexpected file');
+    const r = mergeFile(file);
+    if(r.added || r.filled || r.removed){ fillLiveFilters(); afterLiveChange(true); }
+    const last = file.games.filter(function(g){ return g[5] != null; }).map(function(g){ return g[0]; }).sort().pop();
+    el.className = 'msg mut';
+    el.textContent = 'Data file from ' + fmtStamp(file.generated) + ' · ' + file.games.length + ' games' + (last ? ', latest result ' + fmtDate(last) : ', no results yet') +
+      ' · ' + LG.filter(isPlayed).length + ' results in the app' +
+      (r.filled || r.added || r.removed ? ' · just merged: ' + r.filled + ' results, ' + r.added + ' new games' + (r.removed ? ', ' + r.removed + ' removed' : '') : ' · nothing new') + '.';
+  }catch(err){
+    el.className = 'msg mut';
+    el.textContent = location.protocol === 'file:' ? 'Automatic updates work when the app is opened from its web address, not as a local file.' : 'Could not reach the update file (' + err.message + '). The app keeps working with what it has.';
+  }
+}
+function exportCsv(){
+  const lines = ['date,away,home,awayPts,homePts,type'].concat(LG.map(function(x){
+    return [x.date, x.away, x.home, x.aPts == null ? '' : x.aPts, x.hPts == null ? '' : x.hPts, x.type].join(',');
+  }));
+  const blob = new Blob([lines.join('\n') + '\n'], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = LEAGUE.csvName;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+// ---------- simulation ----------
+let simMeta = null, simBusy = false;
+const SL = Math.max.apply(null, GROUPS.map(function(g){ return g.teams.length; }));
+const zoneOf = function(k){ for(let z = 0; z < LEAGUE.zones.length; z++) if(k <= LEAGUE.zones[z].to) return LEAGUE.zones[z].cls; return 'z3'; };
+const SEASON_GAMES = LEAGUE.games, rnd = Math.random;
+let _spare = null;
+function randn(){
+  if(_spare !== null){ const v = _spare; _spare = null; return v; }
+  let u = 0, v = 0; while(u === 0) u = rnd(); while(v === 0) v = rnd();
+  const r = Math.sqrt(-2 * Math.log(u)); _spare = r * Math.sin(2 * Math.PI * v); return r * Math.cos(2 * Math.PI * v);
+}
+function createSimulation(opts){
+  const keys = CUR_IDX.map(function(i){ return F[i].k; }), n = keys.length, idx = {};
+  keys.forEach(function(k, i){ idx[k] = i; });
+  const base = new Int32Array(n), gp = new Int32Array(n), homeCnt = new Int32Array(n), rem = [];
+  let played = 0;
+  LG.forEach(function(x){
+    if(!inStandings(x)) return;
+    const h = idx[x.home], a = idx[x.away]; if(h === undefined || a === undefined) return;
+    gp[h]++; gp[a]++; homeCnt[h]++;
+    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; }
+    else rem.push(h, a, x.neu ? 1 : 0);
+  });
+  const need = new Int32Array(n); let missingSlots = 0, totalNeed = 0;
+  for(let i = 0; i < n; i++){ const m = Math.max(0, SEASON_GAMES - gp[i]); missingSlots += m; need[i] = opts.fill ? m : 0; totalNeed += need[i]; }
+  const st = R.state, sn = R.seasons[R.seasons.length - 1];
+  const mu = new Float64Array(n), phi = new Float64Array(n);
+  CUR_IDX.forEach(function(fi, i){ mu[i] = st.mu[fi]; phi[i] = st.phi[fi]; });
+  const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd, LIM = 6, TN = 2400, TAB = new Float64Array(TN + 1);
+  for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
+  const SC = TN / (2 * LIM), hh = sn.hca / Q;
+  const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
+  const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
+  const GI = GROUPS.map(function(g){ return g.teams.map(function(k){ return idx[k]; }).filter(function(i){ return i !== undefined; }); });
+  const pos = new Int32Array(n * SL), sumW = new Float64Array(n);
+  const sim = {done:0, played:played, scheduled:rem.length / 3, missing:Math.floor(missingSlots / 2), generated:Math.floor(totalNeed / 2)};
+  function play(h, a, neu){
+    let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
+    if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
+    const i = x | 0, p = TAB[i] + (TAB[i + 1] - TAB[i]) * (x - i);
+    if(rnd() < p) w[h]++; else w[a]++;
+  }
+  function rankConf(ci){
+    const m = ci.length;
+    for(let i = 0; i < m; i++) ord[i] = ci[i];
+    for(let i = 1; i < m; i++){ const v = ord[i], kv = key[v]; let j = i - 1; while(j >= 0 && key[ord[j]] < kv){ ord[j + 1] = ord[j]; j--; } ord[j + 1] = v; }
+    for(let p = 0; p < m; p++) pos[ord[p] * SL + p]++;
+  }
+  function playFill(){
+    let m = 0;
+    for(let i = 0; i < n; i++) for(let c = 0; c < need[i]; c++) stubs[m++] = i;
+    for(let i = m - 1; i > 0; i--){ const j = (rnd() * (i + 1)) | 0, t = stubs[i]; stubs[i] = stubs[j]; stubs[j] = t; }
+    const pairs = m >> 1;
+    for(let q = 0; q < pairs; q++){
+      const a = stubs[2 * q]; if(stubs[2 * q + 1] !== a) continue;
+      let fixed = false;
+      for(let j = 2 * q + 2; j < m; j++){ if(stubs[j] !== a){ stubs[2 * q + 1] = stubs[j]; stubs[j] = a; fixed = true; break; } }
+      if(!fixed){ for(let k = 0; k < q; k++){ const pa = stubs[2 * k], pb = stubs[2 * k + 1]; if(pa !== a && pb !== a){ stubs[2 * k + 1] = a; stubs[2 * q + 1] = pb; break; } } }
+    }
+    for(let i = 0; i < n; i++) hn[i] = SEASON_GAMES / 2 - homeCnt[i];
+    for(let q = 0; q < pairs; q++){
+      const x = stubs[2 * q], y = stubs[2 * q + 1]; if(x === y) continue;
+      let h, a;
+      if(hn[x] > hn[y]){ h = x; a = y; } else if(hn[y] > hn[x]){ h = y; a = x; } else if(rnd() < 0.5){ h = x; a = y; } else { h = y; a = x; }
+      hn[h]--; gms[h]++; gms[a]++; play(h, a, 0);
+    }
+  }
+  sim.run = function(count){
+    for(let s = 0; s < count; s++){
+      for(let i = 0; i < n; i++) str[i] = mu[i] + (opts.uncertainty ? phi[i] * randn() : 0);
+      w.set(base); gms.set(gp);
+      for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
+      if(totalNeed > 1) playFill();
+      for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + rnd() * 1e-7; sumW[i] += w[i]; }
+      GI.forEach(rankConf); sim.done++;
+    }
+  };
+  sim.results = function(){
+    const d = Math.max(1, sim.done);
+    return keys.map(function(k, i){
+      const p = [], tp = LEAGUE.tops.map(function(){ return 0; });
+      for(let q = 0; q < SL; q++){ const f = pos[i * SL + q] / d; p.push(f); LEAGUE.tops.forEach(function(c, z){ if(q < c) tp[z] += f; }); }
+      let gi = 0; GI.forEach(function(g, z){ if(g.indexOf(i) >= 0) gi = z; });
+      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp};
+    });
+  };
+  return sim;
+}
+function simCounts(){
+  const cnt = {}; CUR_IDX.forEach(function(i){ cnt[F[i].k] = 0; });
+  let played = 0, left = 0;
+  LG.forEach(function(x){
+    if(!inStandings(x) || cnt[x.home] === undefined || cnt[x.away] === undefined) return;
+    cnt[x.home]++; cnt[x.away]++;
+    if(isPlayed(x)) played++; else left++;
+  });
+  let miss = 0; Object.keys(cnt).forEach(function(k){ miss += Math.max(0, SEASON_GAMES - cnt[k]); });
+  return {played:played, left:left, missing:Math.floor(miss / 2)};
+}
+function updateSimBtn(){ const n = parseInt($('#simN').value, 10); $('#btnSim').textContent = 'Simulate ' + (n > 0 ? fmtInt(n) : '') + ' seasons'; }
+function updateSimInfo(){
+  const el = $('#simInfo'); if(!el || !R) return;
+  const c = simCounts(), fill = $('#simFill').checked;
+  let t = fmtInt(c.played) + ' standings games played · ' + fmtInt(c.left) + ' scheduled to go · ' + fmtInt(c.missing) + ' not in the schedule yet (to reach ' + SEASON_GAMES + ' per team).';
+  if(c.missing > 0) t += fill ? ' Those are generated randomly in every simulated season until you add the real games.' : ' Without generating them, teams play different numbers of games and the table is not meaningful.';
+  if(simMeta && simMeta.played !== c.played) t += ' Results have changed since the last run; simulate again to refresh the tables.';
+  el.textContent = t;
+}
+function ordinal(n){ const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function pctCell(f, tip){
+  const ti = tip ? ' title="' + tip + '"' : '';
+  if(!(f > 0)) return '<td class="pc z"' + ti + '>·</td>';
+  const a = Math.round(Math.min(0.85, f * 1.6) * 100);
+  return '<td class="pc"' + ti + ' style="background:color-mix(in srgb, var(--accent) ' + a + '%, transparent)' + (a > 58 ? ';color:var(--accent-ink)' : '') + '">' + (f * 100).toFixed(1) + '</td>';
+}
+function renderSim(res, n){
+  GROUPS.forEach(function(gr){
+    const sl = gr.slot;
+    const rows = res.filter(function(r){ return r.conf === gr.id; }).sort(function(a, b){ return b.avgW - a.avgW; });
+    let h = '<thead><tr><th class="l">Team</th><th>Avg W</th>';
+    for(let k = 1; k <= gr.teams.length; k++) h += '<th class="pos ' + zoneOf(k) + '">' + k + '</th>';
+    LEAGUE.tops.forEach(function(c){ h += '<th>Top ' + c + '</th>'; });
+    h += '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      h += '<tr><td class="l">' + badge(r.f, LIVE_Y) + eraOf(F[r.f], LIVE_Y).nick + '</td><td>' + r.avgW.toFixed(1) + '</td>';
+      r.pos.slice(0, gr.teams.length).forEach(function(f, k){ h += pctCell(f, tname(r.f, LIVE_Y) + ' finishes ' + ordinal(k + 1) + ' in ' + (f * 100).toFixed(1) + '% of seasons'); });
+      r.tops.forEach(function(v){ h += '<td class="sum">' + (v * 100).toFixed(1) + '</td>'; });
+      h += '</tr>';
+    });
+    $('#simTbl' + sl).innerHTML = h + '</tbody>';
+    $('#simTitle' + sl).textContent = gr.label + (GROUPS.length > 1 ? ' ' + LEAGUE.groupWord : '') + ' \u00b7 % of ' + fmtInt(n) + ' simulated seasons finishing in each position';
+  });
+  $('#simOut').hidden = false; $('#simOutW').hidden = GROUPS.length < 2; $('#simEmpty').hidden = true;
+}
+function startSim(){
+  if(simBusy) return;
+  const n = Math.max(100, Math.min(200000, parseInt($('#simN').value, 10) || 10000));
+  $('#simN').value = n; updateSimBtn();
+  let sim;
+  try{ sim = createSimulation({uncertainty:$('#simUnc').checked, fill:$('#simFill').checked}); }
+  catch(e){ $('#simProg').textContent = 'Could not start the simulation: ' + e.message; return; }
+  simBusy = true; $('#btnSim').disabled = true;
+  const chunk = Math.max(50, Math.floor(n / 40)), t0 = Date.now();
+  (function step(){
+    try{
+      sim.run(Math.min(chunk, n - sim.done));
+      if(sim.done < n){ $('#simProg').textContent = 'Simulating… ' + fmtInt(sim.done) + ' / ' + fmtInt(n); setTimeout(step, 0); return; }
+      simMeta = {n:n, played:sim.played};
+      renderSim(sim.results(), n);
+      $('#simProg').textContent = 'Done: ' + fmtInt(n) + ' seasons in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s.';
+    }catch(e){ $('#simProg').textContent = 'Simulation failed: ' + e.message; }
+    simBusy = false; $('#btnSim').disabled = false; updateSimInfo();
+  })();
+}
+function wireLive(){
+  const opts = CUR_IDX.map(function(i){ const e = F[i].e[F[i].e.length - 1]; return '<option value="' + F[i].k + '">' + e[2] + ' ' + e[3] + '</option>'; }).join('');
+  $('#aAway').innerHTML = opts; $('#aHome').innerHTML = opts; $('#aHome').selectedIndex = 1;
+  $('#aType').innerHTML = TYPE_SHOW.map(function(c){ return '<option value="' + c + '">' + TYPE_NAMES[c] + '</option>'; }).join('');
+  const open = LG.filter(function(g){ return !isPlayed(g); })[0];
+  $('#aDate').value = open ? open.date : LEAGUE.defaultDate;
+  fillLiveFilters(); updateLiveStatus(); updateSimBtn();
+  if(!LEAGUE.playin) $$('[data-playin]').forEach(function(e){ e.remove(); });
+  $$('.legend').forEach(function(el){
+    let from = 1; el.innerHTML = LEAGUE.zones.map(function(z){ const s = '<span class="' + z.cls + '"><i></i>' + from + '\u2013' + z.to + ' ' + z.label + '</span>'; from = z.to + 1; return s; }).join('');
+  });
+  if(GROUPS.length < 2){ $('#projView').parentNode.hidden = true; }
+  $('#gLiveBody').addEventListener('change', onLiveInput);
+  $('#gLiveBody').addEventListener('click', onLiveClick);
+  ['#gMonth', '#gStatus'].forEach(function(s){ $(s).addEventListener('change', function(){ lShown = 300; renderLiveGames(); }); });
+  $('#btnSim').addEventListener('click', startSim);
+  $('#simN').addEventListener('input', updateSimBtn);
+  $('#simFill').addEventListener('change', updateSimInfo);
+  $('#btnAdd').addEventListener('click', addGame);
+  $('#btnImport').addEventListener('click', doImport);
+  $('#btnCheck').addEventListener('click', function(){ syncSeason(true); });
+  $('#btnReload').addEventListener('click', async function(){
+    try{
+      if('serviceWorker' in navigator){ const rs = await navigator.serviceWorker.getRegistrations(); for(const r of rs) await r.unregister(); }
+      if(window.caches){ const ks = await caches.keys(); for(const k of ks) await caches.delete(k); }
+    }catch(e){}
+    location.reload();
+  });
+  $('#updBtn').addEventListener('click', function(){ location.reload(); });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden && Date.now() - lastSync > 20 * 60 * 1000) syncSeason(false); });
+  $('#btnExport').addEventListener('click', exportCsv);
+  $('#btnClear').addEventListener('click', function(){
+    if(!confirm('Clear every ' + LEAGUE.liveLabel + ' result? The schedule stays.')) return;
+    LG.forEach(function(x){ x.aPts = null; x.hPts = null; }); afterLiveChange(true);
+  });
+  $('#btnReset').addEventListener('click', function(){
+    if(!confirm('Replace all ' + LEAGUE.liveLabel + ' games and results with the built-in schedule?')) return;
+    LG = freshLive(); fillLiveFilters(''); afterLiveChange(true);
+  });
+}
+
+// ---------- install / offline ----------
+try{
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    const hadCtl = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){});
+    navigator.serviceWorker.addEventListener('controllerchange', function(){ if(hadCtl) $('#updBar').hidden = false; });
+  }
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+}catch(e){}
+
+// start
+(function init(){
+  const m = /^#(\d{4})$/.exec(location.hash);
+  if(m){ const k = D.seasons.findIndex(function(s){ return s.y === +m[1]; }); if(k >= 0) si = k; }
+  fillSettings();
+  wireLive();
+  compute();
+})();
+window.__nbaHist = {get D(){ return D; }, get R(){ return R; }, get LG(){ return LG; }, createSimulation:createSimulation, afterLiveChange:afterLiveChange, mergeRows:mergeRows, parseSchedule:parseSchedule, goSeason:goSeason, openTab:openTab};
+})();
+
+</script>
+</body>
+</html>

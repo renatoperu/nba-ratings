@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<script>try{var id='nba',l=localStorage.getItem('lastLeague');if(!/[?&]lg=/.test(location.search)&&l&&l!==id){location.replace(l==='wnba'?'wnba.html':'index.html')}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
 <title>NBA Ratings</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0B1A3A">
@@ -207,6 +208,7 @@ tr.clk{cursor:pointer}
 .updbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
 .updbar[hidden]{display:none}
 @media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
+.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.06em;padding:8px 18px}.lgsw a.on{background:#fff;color:var(--navy)}
 @media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
 </style>
 </head>
@@ -248,6 +250,7 @@ tr.clk{cursor:pointer}
 <header class="hero">
   <div class="hero-in">
     <div class="hero-copy">
+      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="on">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a></nav>
       <h1>NBA power ratings <br>1946–2027</h1>
       <div class="seasonbar">
         <button id="prevS" aria-label="Previous season">◀</button>
@@ -286,7 +289,7 @@ tr.clk{cursor:pointer}
         <div class="jumps">
           <button id="jStart">Season start</button>
           <button id="jRS">End of regular season</button>
-          <button id="jPI" title="First play-in game">Play-in starts</button>
+          <button id="jPI" data-playin title="First play-in game">Play-in starts</button>
           <button id="jPO" title="First playoff game">Playoffs start</button>
           <button id="jEnd">End of season</button>
         </div>
@@ -298,7 +301,7 @@ tr.clk{cursor:pointer}
           <th class="sortable" data-k="rating">Rating</th>
           <th class="sortable" data-k="dlt" title="Change since the start of the season (after the carry-over adjustment)">Δ season</th>
           <th class="sortable hide-s" data-k="rd" title="Rating deviation: uncertainty in the rating. Resets at the start of every season.">RD</th>
-          <th class="sortable" data-k="w" title="Regular season incl. NBA Cup group and knockout games (these count in the standings)">Reg. season</th>
+          <th class="sortable" data-k="w" title="Regular season incl. NBA Cup games that count in the standings">Reg. season</th>
           <th class="sortable hide-s" data-k="pw" title="Play-in and playoff games">Postseason</th>
           <th class="hide-s">Trend</th>
         </tr></thead>
@@ -332,7 +335,7 @@ tr.clk{cursor:pointer}
     <div class="controls">
       <label>Team <select id="gTeam"></select></label>
       <label>Type <select id="gType">
-        <option value="">All games</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I">Play-in</option><option value="P">Playoffs</option>
+        <option value="">All games</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option>
       </select></label>
       <label class="liveonly" hidden>Month <select id="gMonth"></select></label>
       <label class="liveonly" hidden>Show <select id="gStatus"><option value="all">All games</option><option value="open">Without result</option><option value="done">With result</option></select></label>
@@ -385,13 +388,13 @@ tr.clk{cursor:pointer}
       </div>
     </div>
     <div class="card data pad scroll" id="simOut" hidden>
-      <h2 id="simTitleE">Eastern Conference</h2>
-      <div class="legend"><span class="z1"><i></i>1–6 playoffs</span><span class="z2"><i></i>7–10 play-in</span><span class="z3"><i></i>11–15 lottery</span></div>
+      <h2 id="simTitleE"></h2>
+      <div class="legend"></div>
       <table class="simtbl" id="simTblE"></table>
     </div>
     <div class="card data pad scroll" id="simOutW" hidden>
-      <h2 id="simTitleW">Western Conference</h2>
-      <div class="legend"><span class="z1"><i></i>1–6 playoffs</span><span class="z2"><i></i>7–10 play-in</span><span class="z3"><i></i>11–15 lottery</span></div>
+      <h2 id="simTitleW"></h2>
+      <div class="legend"></div>
       <table class="simtbl" id="simTblW"></table>
     </div>
   </section>
@@ -400,7 +403,7 @@ tr.clk{cursor:pointer}
     <div class="grid2">
       <div class="card">
         <h2>Add a 2026-27 game</h2>
-        <p class="hint">For games missing from the schedule: Cup knockout games, flex games, play-in and playoff games. Scores are optional.</p>
+        <p class="hint">For games missing from the schedule: Cup knockout games, flex games, play-in and playoff games. Scores are optional. Scores are optional.</p>
         <div class="form">
           <label for="aDate">Date</label><input type="date" id="aDate">
           <label for="aType">Type</label><select id="aType"></select>
@@ -419,7 +422,7 @@ tr.clk{cursor:pointer}
         <p><input type="file" id="fFiles" accept=".csv,.tsv,.txt" multiple></p>
         <textarea id="iText" placeholder="Date,Start (ET),Visitor/Neutral,PTS,Home/Neutral,PTS,...&#10;Tue, Oct 20, 2026,7:30p,San Antonio Spurs,,Oklahoma City Thunder,,..."></textarea>
         <div class="controls" style="margin-top:8px"><label>Type for rows without one
-          <select id="iType"><option value="auto">Auto (regular season, playoffs after it ends)</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I">Play-in</option><option value="P">Playoffs</option></select></label></div>
+          <select id="iType"><option value="auto">Auto (regular season, playoffs after it ends)</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option></select></label></div>
         <p><button class="primary" id="btnImport">Import</button></p>
         <div class="msg" id="impMsg"></div>
         <p class="hint">Importing merges: new games are added and scores fill in results for games you already have. Re-import any time to load new results.</p>
@@ -497,7 +500,7 @@ tr.clk{cursor:pointer}
           <label><input type="checkbox" data-t="R"> Regular season</label>
           <label><input type="checkbox" data-t="C"> NBA Cup</label>
           <label><input type="checkbox" data-t="F"> Cup final</label>
-          <label><input type="checkbox" data-t="I"> Play-in</label>
+          <label data-playin><input type="checkbox" data-t="I"> Play-in</label>
           <label><input type="checkbox" data-t="P"> Playoffs</label>
         </div>
         <div class="row2"><button class="primary" id="btnApply">Recalculate all seasons</button><button id="btnDefaults">Restore defaults</button></div>
@@ -562,11 +565,33 @@ function glicko2Update(mu, phi, sigma, games, tau){
 }
 
 
+const LEAGUE = {
+  id:'nba', name:'NBA', pageName:'index.html',
+  seasonLabel:function(y){ return (y - 1) + '-' + String(y).slice(2); },
+  typeNames:{R:'Regular season', C:'NBA Cup', F:'Cup final', I:'Play-in', P:'Playoffs'},
+  defaults:{},
+  playin:true,
+  groups:[{id:'E', label:'Eastern', teams:['ATL','BOS','BKN','CHA','CHI','CLE','DET','IND','MIA','MIL','NYK','ORL','PHI','TOR','WAS']},
+          {id:'W', label:'Western', teams:['DAL','DEN','GSW','HOU','LAC','LAL','MEM','MIN','NOP','OKC','PHX','POR','SAC','SAS','UTA']}],
+  groupWord:'Conference',
+  zones:[{to:6, cls:'z1', label:'playoffs'}, {to:10, cls:'z2', label:'play-in'}, {to:15, cls:'z3', label:'lottery'}],
+  tops:[6, 10],
+  games:82, stdTotal:1230,
+  liveLabel:'2026-27', liveFile:'data/season.json', defaultDate:'2026-10-20',
+  hasPostRound:true,
+  keys:{hist:'nba-history-glicko2-v1', live:'nba-history-live-v1'},
+  alias:{BKN:['BRK'], CHA:['CHO'], CLE:['Cavs'], DAL:['Mavs'], GSW:['GS', 'Golden St Warriors'], LAC:['LA Clippers'], LAL:['LA Lakers'], MIN:['Wolves'],
+    NOP:['NO', 'Pels'], NYK:['NY'], PHI:['Sixers'], PHX:['PHO'], POR:['Blazers'], SAS:['SA'], UTA:['UTAH'], WAS:['WSH']},
+  cupRe:/(nba cup|in-season|cup)/,
+  missingChip:'regular-season games not scheduled yet (Cup knockout and flex games). Add them in Add / Import.',
+  csvName:'nba-2026-27-games.csv'
+};
+
 const BASE_DAY = Date.UTC(1946, 0, 1) / 86400000;
 function dayToIso(d){ return new Date((BASE_DAY + d) * 86400000).toISOString().slice(0, 10); }
-function seasonLabel(y){ return (y - 1) + '-' + String(y).slice(2); }
+function seasonLabel(y){ return LEAGUE.seasonLabel(y); }
 const TYPE_LETTERS = 'RCFIP';
-const TYPE_NAMES = {R:'Regular season', C:'NBA Cup', F:'Cup final', I:'Play-in', P:'Playoffs'};
+const TYPE_NAMES = LEAGUE.typeNames;
 function normCdf(z){
   const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z*z/2);
   const p = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
@@ -582,6 +607,7 @@ function movScore(margin, S){ return S.useMov ? 1 / (1 + Math.exp(-margin / S.mo
 
 const HIST_DEFAULTS = {tau:0.5, initR:1500, newRD:350, startRD:100, initVol:0.06, useMov:true, movScale:10,
   hcaMode:'auto', hca:25, hca0:45, sdMode:'auto', sd0:12.5, entry:'literal', types:{R:1, C:1, F:1, I:1, P:1}};
+Object.assign(HIST_DEFAULTS, LEAGUE.defaults || {});
 
 // Compact data -> typed arrays. Each game is 10 chars: day(3, base36) away(1) home(1) awayPts(2) homePts(2) type(1; lower case = neutral site).
 function decodeHistory(DATA){
@@ -738,7 +764,7 @@ const LIVE_SCHEDULE={"y":2027,"src":"ESPN schedule via sportsdataverse/hoopR-nba
 <script>
 (function(){
 'use strict';
-const LS_KEY = 'nba-history-glicko2-v1';
+const LS_KEY = LEAGUE.keys.hist;
 const $ = function(s){ return document.querySelector(s); };
 const $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
 const D0 = decodeHistory(HIST_DATA), F = D0.F;
@@ -797,7 +823,7 @@ const cur = function(){ return R.seasons[si]; };
 
 // ---------- computing ----------
 function compute(){
-  $('#overlay').hidden = false; $('#overlayTxt').textContent = 'Rating 80 seasons…';
+  $('#overlay').hidden = false; $('#overlayTxt').textContent = 'Rating ' + D0.seasons.length + ' seasons…';
   setTimeout(function(){
     R0 = runHistory(D0, S);
     computeLive();
@@ -910,14 +936,15 @@ function renderRatings(){
 
 
 // ---------- projections and team detail ----------
-const GAMES82 = 82;
+const GAMES82 = LEAGUE.games;
 function isLiveView(){ return cur().y === LIVE_Y; }
 function projection(){
   const st = R.state, rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
-  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, upc:[]}; });
+  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
   LG.forEach(function(g){
     if(!inStandings(g)) return;
     const h = FK[g.home], a = FK[g.away]; if(!P[h] || !P[a]) return;
+    P[h].sosAS += rat(a); P[h].sosAN++; P[a].sosAS += rat(h); P[a].sosAN++;
     if(isPlayed(g)){
       const hw = g.hPts > g.aPts; P[h][hw ? 'w' : 'l']++; P[a][hw ? 'l' : 'w']++;
     } else {
@@ -933,8 +960,8 @@ function projection(){
     const avg = x.left ? x.ew / x.left : 0.5;
     x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
     x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
-    x.sos = x.sosN ? x.sosS / x.sosN : NaN;
-    x.conf = EAST.indexOf(F[f].k) >= 0 ? 'East' : 'West';
+    x.sosRest = x.sosN > 0; x.sos = x.sosN ? x.sosS / x.sosN : (x.sosAN ? x.sosAS / x.sosAN : NaN);
+    x.conf = GROUP_OF[F[f].k].id;
     x.upc.sort(function(p, q){ return p.date < q.date ? -1 : 1; });
   });
   return P;
@@ -956,15 +983,16 @@ function renderProj(){
       '<td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td><td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
   };
   let html = '';
-  if(view === 'conf'){
-    ['East', 'West'].forEach(function(cf){
-      html += '<tr class="grp"><td colspan="7">' + (cf === 'East' ? 'Eastern' : 'Western') + ' Conference</td></tr>';
+  if(view === 'conf' && GROUPS.length > 1){
+    GROUPS.forEach(function(gr){
+      const cf = gr.id;
+      html += '<tr class="grp"><td colspan="7">' + gr.label + ' ' + LEAGUE.groupWord + '</td></tr>';
       list.filter(function(x){ return x.conf === cf; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
     });
   } else list.slice().sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
   $('#projTbl tbody').innerHTML = html;
   const unsched = list[0].unsched;
-  $('#projNote').textContent = 'Ranked by expected final wins.' + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
+  $('#projNote').textContent = (list[0].rest === 0 ? 'Regular season complete: ranked by final record.' : 'Ranked by expected final wins.') + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
 }
 function ratingAt(sn, l, day){ // rating after the last rating period on or before `day`
   let v = sn.startRating[l];
@@ -974,9 +1002,10 @@ function ratingAt(sn, l, day){ // rating after the last rating period on or befo
 function openTeam(f, noPush){
   const sn = cur(), y = sn.y, nT = sn.nT, l = sn.teams.indexOf(f); if(l < 0) return;
   const lim = dayLimit(), live = isLiveView() && pos === sn.days.length;
-  const pts = [{d:sn.days[0] - 1, r:sn.startRating[l], rd:sn.startRD[l]}];
+  const dStart = sn.days.length ? sn.days[0] - 1 : (LG.length ? isoToDay(LG[0].date) - 1 : 0);
+  const pts = [{d:dStart, r:sn.startRating[l], rd:sn.startRD[l]}];
   for(let p = 0; p < pos; p++) pts.push({d:sn.days[p], r:sn.rate[p * nT + l], rd:sn.rd[p * nT + l]});
-  const now = pts[pts.length - 1], last = pos === 0 ? sn.days[0] - 1 : sn.days[pos - 1];
+  const now = pts[pts.length - 1], last = pos === 0 ? dStart : sn.days[pos - 1];
   const ord = []; sn.teams.forEach(function(g, k){ ord.push({f:g, r:pos === 0 ? sn.startRating[k] : sn.rate[(pos - 1) * nT + k]}); });
   ord.sort(function(a, b){ return b.r - a.r; });
   const rank = ord.findIndex(function(x){ return x.f === f; }) + 1;
@@ -1002,9 +1031,9 @@ function openTeam(f, noPush){
     '<div class="tile">' + sg(dWeek) + '<span>Δ last 7 days</span></div>' +
     '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w) + '</b><span>Last ' + l10.length + '</span></div>' +
     '<div class="tile"><b>' + w + '-' + lo + '</b><span>Record</span></div>' +
-    (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>Projected final</span></div>' +
-      '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' +
-      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' : '') +
+    (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>' + (proj.rest > 0 ? 'Projected final' : 'Regular season') + '</span></div>' +
+      (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' : '') +
+      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, ' + (proj.sosRest ? 'remaining' : 'season') + '</span></div>' : '') +
     '</div>' +
     '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
     '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : 'l') + '">' + (x.win ? 'W' : 'L') + '</i>'; }).join('') + '</div>' +
@@ -1023,7 +1052,7 @@ function openTeam(f, noPush){
   document.body.style.overflow = 'hidden';
   if(!noPush){ try{ history.pushState({dlg:1}, ''); }catch(e){} }
 }
-function CUR_CONF(f){ const k = F[f].k; return F[f].cur ? (EAST.indexOf(k) >= 0 ? 'East' : 'West') : ''; }
+function CUR_CONF(f){ const g = GROUPS.length > 1 && F[f].cur ? GROUP_OF[F[f].k] : null; return g ? g.label.replace(/ern$/, '') : ''; }
 function closeTeam(fromPop){
   if($('#teamDlg').hidden) return;
   $('#teamDlg').hidden = true; document.body.style.overflow = '';
@@ -1264,19 +1293,19 @@ $('#btnApply').addEventListener('click', function(){ readSettings(); saveSetting
 $('#btnDefaults').addEventListener('click', function(){ S = JSON.parse(JSON.stringify(HIST_DEFAULTS)); saveSettings(); fillSettings(); compute(); $('#setMsg').textContent = 'Defaults restored.'; });
 
 // ================= live season (2026-27) =================
-const LIVE_KEY = 'nba-history-live-v1';
+const LIVE_KEY = LEAGUE.keys.live;
 const FK = {}; F.forEach(function(f){ FK[f.k] = f.idx; });
 const CUR_IDX = F.filter(function(f){ return f.cur; }).map(function(f){ return f.idx; });
-const EAST = ['ATL','BOS','BKN','CHA','CHI','CLE','DET','IND','MIA','MIL','NYK','ORL','PHI','TOR','WAS'];
-const WEST = ['DAL','DEN','GSW','HOU','LAC','LAL','MEM','MIN','NOP','OKC','PHX','POR','SAC','SAS','UTA'];
-const TYPE_LIST = ['R', 'C', 'F', 'I', 'P'];
+const GROUPS = LEAGUE.groups.map(function(g, i){ return {id:g.id, label:g.label, slot:['E', 'W'][i], teams:g.teams || CUR_IDX.map(function(x){ return F[x].k; })}; });
+const GROUP_OF = {}; GROUPS.forEach(function(g){ g.teams.forEach(function(k){ GROUP_OF[k] = g; }); });
+const TYPE_LIST = ['R', 'C', 'F', 'I', 'P'], TYPE_SHOW = TYPE_LIST.filter(function(c){ return c !== 'I' || LEAGUE.playin; });
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 let LG = loadLive(), liveGi = new Map(), liveStart = 0;
 let lShown = 300;
 
 function gkey(d, a, h){ return d + '|' + a + '|' + h; }
 function freshLive(){
-  return LIVE_SCHEDULE.games.map(function(r){ return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:null, hPts:null, src:'f'}; });
+  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, src:'f', auto:has ? 1 : undefined}; });
 }
 function loadLive(){
   try{
@@ -1337,8 +1366,8 @@ function afterLiveChange(full){
 }
 function updateLiveStatus(){
   const played = LG.filter(isPlayed).length, std = LG.filter(inStandings).length;
-  $('#liveStatus').innerHTML = '<b>' + fmtInt(played) + '</b> of ' + fmtInt(LG.length) + ' games played in 2026-27' +
-    (std < 1230 ? ' · <span class="chip">' + fmtInt(1230 - std) + ' regular-season games not scheduled yet (Cup knockout and flex games). Add them in Add / Import.</span>' : '');
+  $('#liveStatus').innerHTML = '<b>' + fmtInt(played) + '</b> of ' + fmtInt(LG.length) + ' games played in ' + LEAGUE.liveLabel +
+    (std < LEAGUE.stdTotal ? ' · <span class="chip">' + fmtInt(LEAGUE.stdTotal - std) + ' ' + LEAGUE.missingChip + '</span>' : '');
 }
 
 // ---------- live games tab ----------
@@ -1350,7 +1379,7 @@ function fillLiveFilters(pickMonth){
   if(keep && ms.indexOf(keep) >= 0) sel.value = keep;
   else { const open = LG.filter(function(g){ return !isPlayed(g); })[0]; sel.value = open ? open.date.slice(0, 7) : ms[ms.length - 1]; }
 }
-function typeSelect(t){ return '<select class="ty" data-f="type">' + TYPE_LIST.map(function(c){ return '<option value="' + c + '"' + (c === t ? ' selected' : '') + '>' + TYPE_NAMES[c] + '</option>'; }).join('') + '</select>'; }
+function typeSelect(t){ return '<select class="ty" data-f="type">' + TYPE_SHOW.map(function(c){ return '<option value="' + c + '"' + (c === t ? ' selected' : '') + '>' + TYPE_NAMES[c] + '</option>'; }).join('') + '</select>'; }
 function liveFiltered(){
   const team = $('#gTeam').value, type = $('#gType').value, m = $('#gMonth').value, st = $('#gStatus').value;
   return LG.filter(function(g){
@@ -1428,7 +1457,7 @@ function addGame(){
   if(ap !== '' || hp !== ''){
     a = ptsOf(ap); h = ptsOf(hp);
     if(a == null || h == null) return setMsg('#addMsg', 'Enter both scores, or leave both empty.', true);
-    if(a === h) return setMsg('#addMsg', 'NBA games cannot end tied; check the scores.', true);
+    if(a === h) return setMsg('#addMsg', LEAGUE.name + ' games cannot end tied; check the scores.', true);
   }
   const k = gkey(date, away, home), ex = liveById(k);
   if(ex){ if(a != null){ ex.aPts = a; ex.hPts = h; } ex.type = type; if(neu) ex.neu = 1; }
@@ -1440,8 +1469,7 @@ function addGame(){
 function norm(s){ return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
 const ALIAS = {};
 (function(){
-  const EXTRA = {BKN:['BRK'], CHA:['CHO'], CLE:['Cavs'], DAL:['Mavs'], GSW:['GS', 'Golden St Warriors'], LAC:['LA Clippers'], LAL:['LA Lakers'], MIN:['Wolves'],
-    NOP:['NO', 'Pels'], NYK:['NY'], PHI:['Sixers'], PHX:['PHO'], POR:['Blazers'], SAS:['SA'], UTA:['UTAH'], WAS:['WSH']};
+  const EXTRA = LEAGUE.alias;
   F.filter(function(f){ return f.cur; }).forEach(function(f){
     const e = f.e[f.e.length - 1];
     [f.k, e[2] + ' ' + e[3], e[3]].concat(EXTRA[f.k] || []).forEach(function(a){ ALIAS[norm(a)] = f.k; });
@@ -1475,8 +1503,8 @@ function splitLine(line, delim){
 function typeFromText(s){
   s = String(s || '').toLowerCase().trim(); if(!s) return null;
   if(/^[rcfip]$/.test(s)) return s.toUpperCase();
-  if(/play-?in/.test(s)) return 'I';
-  if(/(nba cup|in-season|cup)/.test(s)) return (/(final|championship)/.test(s) && !/semi|quarter/.test(s)) ? 'F' : 'C';
+  if(LEAGUE.playin && /play-?in/.test(s)) return 'I';
+  if(LEAGUE.cupRe.test(s)) return (/(final|championship)/.test(s) && !/semi|quarter/.test(s)) ? 'F' : 'C';
   if(/playoff|finals|round|conference|series/.test(s)) return 'P';
   if(/regular/.test(s)) return 'R';
   return null;
@@ -1585,7 +1613,7 @@ async function syncSeason(manual){
   const el = $('#autoStatus'); lastSync = Date.now();
   if(manual) el.textContent = 'Checking…';
   try{
-    const resp = await fetch('data/season.json?t=' + Date.now(), {cache:'no-store'});
+    const resp = await fetch(LEAGUE.liveFile + '?t=' + Date.now(), {cache:'no-store'});
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const file = await resp.json();
     if(!file || file.season !== LIVE_Y || !Array.isArray(file.games)) throw new Error('unexpected file');
@@ -1606,13 +1634,15 @@ function exportCsv(){
     return [x.date, x.away, x.home, x.aPts == null ? '' : x.aPts, x.hPts == null ? '' : x.hPts, x.type].join(',');
   }));
   const blob = new Blob([lines.join('\n') + '\n'], {type:'text/csv'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'nba-2026-27-games.csv';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = LEAGUE.csvName;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
 }
 
 // ---------- simulation ----------
 let simMeta = null, simBusy = false;
-const SEASON_GAMES = 82, rnd = Math.random;
+const SL = Math.max.apply(null, GROUPS.map(function(g){ return g.teams.length; }));
+const zoneOf = function(k){ for(let z = 0; z < LEAGUE.zones.length; z++) if(k <= LEAGUE.zones[z].to) return LEAGUE.zones[z].cls; return 'z3'; };
+const SEASON_GAMES = LEAGUE.games, rnd = Math.random;
 let _spare = null;
 function randn(){
   if(_spare !== null){ const v = _spare; _spare = null; return v; }
@@ -1640,9 +1670,9 @@ function createSimulation(opts){
   for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
   const SC = TN / (2 * LIM), hh = sn.hca / Q;
   const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
-  const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(15);
-  const EI = EAST.map(function(k){ return idx[k]; }), WI = WEST.map(function(k){ return idx[k]; });
-  const pos = new Int32Array(n * 15), sumW = new Float64Array(n);
+  const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
+  const GI = GROUPS.map(function(g){ return g.teams.map(function(k){ return idx[k]; }).filter(function(i){ return i !== undefined; }); });
+  const pos = new Int32Array(n * SL), sumW = new Float64Array(n);
   const sim = {done:0, played:played, scheduled:rem.length / 3, missing:Math.floor(missingSlots / 2), generated:Math.floor(totalNeed / 2)};
   function play(h, a, neu){
     let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
@@ -1651,9 +1681,10 @@ function createSimulation(opts){
     if(rnd() < p) w[h]++; else w[a]++;
   }
   function rankConf(ci){
-    for(let i = 0; i < 15; i++) ord[i] = ci[i];
-    for(let i = 1; i < 15; i++){ const v = ord[i], kv = key[v]; let j = i - 1; while(j >= 0 && key[ord[j]] < kv){ ord[j + 1] = ord[j]; j--; } ord[j + 1] = v; }
-    for(let p = 0; p < 15; p++) pos[ord[p] * 15 + p]++;
+    const m = ci.length;
+    for(let i = 0; i < m; i++) ord[i] = ci[i];
+    for(let i = 1; i < m; i++){ const v = ord[i], kv = key[v]; let j = i - 1; while(j >= 0 && key[ord[j]] < kv){ ord[j + 1] = ord[j]; j--; } ord[j + 1] = v; }
+    for(let p = 0; p < m; p++) pos[ord[p] * SL + p]++;
   }
   function playFill(){
     let m = 0;
@@ -1681,15 +1712,16 @@ function createSimulation(opts){
       for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
       if(totalNeed > 1) playFill();
       for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + rnd() * 1e-7; sumW[i] += w[i]; }
-      rankConf(EI); rankConf(WI); sim.done++;
+      GI.forEach(rankConf); sim.done++;
     }
   };
   sim.results = function(){
     const d = Math.max(1, sim.done);
     return keys.map(function(k, i){
-      const p = []; let t6 = 0, t10 = 0;
-      for(let q = 0; q < 15; q++){ const f = pos[i * 15 + q] / d; p.push(f); if(q < 6) t6 += f; if(q < 10) t10 += f; }
-      return {f:FK[k], conf:EI.indexOf(i) >= 0 ? 'E' : 'W', avgW:sumW[i] / d, pos:p, top6:t6, top10:t10};
+      const p = [], tp = LEAGUE.tops.map(function(){ return 0; });
+      for(let q = 0; q < SL; q++){ const f = pos[i * SL + q] / d; p.push(f); LEAGUE.tops.forEach(function(c, z){ if(q < c) tp[z] += f; }); }
+      let gi = 0; GI.forEach(function(g, z){ if(g.indexOf(i) >= 0) gi = z; });
+      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp};
     });
   };
   return sim;
@@ -1702,14 +1734,14 @@ function simCounts(){
     cnt[x.home]++; cnt[x.away]++;
     if(isPlayed(x)) played++; else left++;
   });
-  let miss = 0; Object.keys(cnt).forEach(function(k){ miss += Math.max(0, 82 - cnt[k]); });
+  let miss = 0; Object.keys(cnt).forEach(function(k){ miss += Math.max(0, SEASON_GAMES - cnt[k]); });
   return {played:played, left:left, missing:Math.floor(miss / 2)};
 }
 function updateSimBtn(){ const n = parseInt($('#simN').value, 10); $('#btnSim').textContent = 'Simulate ' + (n > 0 ? fmtInt(n) : '') + ' seasons'; }
 function updateSimInfo(){
   const el = $('#simInfo'); if(!el || !R) return;
   const c = simCounts(), fill = $('#simFill').checked;
-  let t = fmtInt(c.played) + ' standings games played · ' + fmtInt(c.left) + ' scheduled to go · ' + fmtInt(c.missing) + ' not in the schedule yet (to reach 82 per team).';
+  let t = fmtInt(c.played) + ' standings games played · ' + fmtInt(c.left) + ' scheduled to go · ' + fmtInt(c.missing) + ' not in the schedule yet (to reach ' + SEASON_GAMES + ' per team).';
   if(c.missing > 0) t += fill ? ' Those are generated randomly in every simulated season until you add the real games.' : ' Without generating them, teams play different numbers of games and the table is not meaningful.';
   if(simMeta && simMeta.played !== c.played) t += ' Results have changed since the last run; simulate again to refresh the tables.';
   el.textContent = t;
@@ -1722,20 +1754,23 @@ function pctCell(f, tip){
   return '<td class="pc"' + ti + ' style="background:color-mix(in srgb, var(--accent) ' + a + '%, transparent)' + (a > 58 ? ';color:var(--accent-ink)' : '') + '">' + (f * 100).toFixed(1) + '</td>';
 }
 function renderSim(res, n){
-  [['E', 'Eastern'], ['W', 'Western']].forEach(function(cfg){
-    const rows = res.filter(function(r){ return r.conf === cfg[0]; }).sort(function(a, b){ return b.avgW - a.avgW; });
+  GROUPS.forEach(function(gr){
+    const sl = gr.slot;
+    const rows = res.filter(function(r){ return r.conf === gr.id; }).sort(function(a, b){ return b.avgW - a.avgW; });
     let h = '<thead><tr><th class="l">Team</th><th>Avg W</th>';
-    for(let k = 1; k <= 15; k++) h += '<th class="pos ' + (k <= 6 ? 'z1' : k <= 10 ? 'z2' : 'z3') + '">' + k + '</th>';
-    h += '<th>Top 6</th><th>Top 10</th></tr></thead><tbody>';
+    for(let k = 1; k <= gr.teams.length; k++) h += '<th class="pos ' + zoneOf(k) + '">' + k + '</th>';
+    LEAGUE.tops.forEach(function(c){ h += '<th>Top ' + c + '</th>'; });
+    h += '</tr></thead><tbody>';
     rows.forEach(function(r){
       h += '<tr><td class="l">' + badge(r.f, LIVE_Y) + eraOf(F[r.f], LIVE_Y).nick + '</td><td>' + r.avgW.toFixed(1) + '</td>';
-      r.pos.forEach(function(f, k){ h += pctCell(f, tname(r.f, LIVE_Y) + ' finishes ' + ordinal(k + 1) + ' in ' + (f * 100).toFixed(1) + '% of seasons'); });
-      h += '<td class="sum">' + (r.top6 * 100).toFixed(1) + '</td><td class="sum">' + (r.top10 * 100).toFixed(1) + '</td></tr>';
+      r.pos.slice(0, gr.teams.length).forEach(function(f, k){ h += pctCell(f, tname(r.f, LIVE_Y) + ' finishes ' + ordinal(k + 1) + ' in ' + (f * 100).toFixed(1) + '% of seasons'); });
+      r.tops.forEach(function(v){ h += '<td class="sum">' + (v * 100).toFixed(1) + '</td>'; });
+      h += '</tr>';
     });
-    $('#simTbl' + cfg[0]).innerHTML = h + '</tbody>';
-    $('#simTitle' + cfg[0]).textContent = cfg[1] + ' Conference · % of ' + fmtInt(n) + ' simulated seasons finishing in each position';
+    $('#simTbl' + sl).innerHTML = h + '</tbody>';
+    $('#simTitle' + sl).textContent = gr.label + (GROUPS.length > 1 ? ' ' + LEAGUE.groupWord : '') + ' \u00b7 % of ' + fmtInt(n) + ' simulated seasons finishing in each position';
   });
-  $('#simOut').hidden = false; $('#simOutW').hidden = false; $('#simEmpty').hidden = true;
+  $('#simOut').hidden = false; $('#simOutW').hidden = GROUPS.length < 2; $('#simEmpty').hidden = true;
 }
 function startSim(){
   if(simBusy) return;
@@ -1759,11 +1794,16 @@ function startSim(){
 }
 function wireLive(){
   const opts = CUR_IDX.map(function(i){ const e = F[i].e[F[i].e.length - 1]; return '<option value="' + F[i].k + '">' + e[2] + ' ' + e[3] + '</option>'; }).join('');
-  $('#aAway').innerHTML = opts; $('#aHome').innerHTML = opts; $('#aHome').value = 'BOS';
-  $('#aType').innerHTML = TYPE_LIST.map(function(c){ return '<option value="' + c + '">' + TYPE_NAMES[c] + '</option>'; }).join('');
+  $('#aAway').innerHTML = opts; $('#aHome').innerHTML = opts; $('#aHome').selectedIndex = 1;
+  $('#aType').innerHTML = TYPE_SHOW.map(function(c){ return '<option value="' + c + '">' + TYPE_NAMES[c] + '</option>'; }).join('');
   const open = LG.filter(function(g){ return !isPlayed(g); })[0];
-  $('#aDate').value = open ? open.date : '2026-10-20';
+  $('#aDate').value = open ? open.date : LEAGUE.defaultDate;
   fillLiveFilters(); updateLiveStatus(); updateSimBtn();
+  if(!LEAGUE.playin) $$('[data-playin]').forEach(function(e){ e.remove(); });
+  $$('.legend').forEach(function(el){
+    let from = 1; el.innerHTML = LEAGUE.zones.map(function(z){ const s = '<span class="' + z.cls + '"><i></i>' + from + '\u2013' + z.to + ' ' + z.label + '</span>'; from = z.to + 1; return s; }).join('');
+  });
+  if(GROUPS.length < 2){ $('#projView').parentNode.hidden = true; }
   $('#gLiveBody').addEventListener('change', onLiveInput);
   $('#gLiveBody').addEventListener('click', onLiveClick);
   ['#gMonth', '#gStatus'].forEach(function(s){ $(s).addEventListener('change', function(){ lShown = 300; renderLiveGames(); }); });
@@ -1784,11 +1824,11 @@ function wireLive(){
   document.addEventListener('visibilitychange', function(){ if(!document.hidden && Date.now() - lastSync > 20 * 60 * 1000) syncSeason(false); });
   $('#btnExport').addEventListener('click', exportCsv);
   $('#btnClear').addEventListener('click', function(){
-    if(!confirm('Clear every 2026-27 result? The schedule stays.')) return;
+    if(!confirm('Clear every ' + LEAGUE.liveLabel + ' result? The schedule stays.')) return;
     LG.forEach(function(x){ x.aPts = null; x.hPts = null; }); afterLiveChange(true);
   });
   $('#btnReset').addEventListener('click', function(){
-    if(!confirm('Replace all 2026-27 games and results with the built-in schedule?')) return;
+    if(!confirm('Replace all ' + LEAGUE.liveLabel + ' games and results with the built-in schedule?')) return;
     LG = freshLive(); fillLiveFilters(''); afterLiveChange(true);
   });
 }

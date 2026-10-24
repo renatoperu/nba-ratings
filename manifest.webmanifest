@@ -1,7 +1,7 @@
 {
-  "name": "NBA Glicko-2 Ratings",
-  "short_name": "NBA Ratings",
-  "description": "NBA team power ratings from 1946 to today, with the live 2026-27 season.",
+  "name": "NBA + WNBA Glicko-2 Ratings",
+  "short_name": "Hoops Ratings",
+  "description": "NBA (1946 on) and WNBA (2002 on) team power ratings, with the live seasons.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
