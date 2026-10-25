@@ -377,7 +377,7 @@ tr.clk{cursor:pointer}
       <details>
         <summary>How it works</summary>
         <p>Each simulated season starts from the records so far and plays every standings game (regular season and NBA Cup) still without a result. Win probabilities come from the current ratings plus the home edge, converted from Glicko-2's expected score to a true win probability when margin scoring is on. With rating uncertainty on, each season first draws every team's true strength from its rating ± RD, so early in the year the spread of outcomes is wide and it tightens as results come in.</p>
-        <p>The schedule has 80 games per team; the rest (Cup knockout and flex games) are filled in with random opponents until you add them. Teams are ranked in each conference by wins with ties broken at random; the real NBA tiebreakers are not modelled. Play-in and playoff games are not simulated: positions 7–10 are the play-in zone.</p>
+        <p>The schedule has 80 games per team; the rest (Cup knockout and flex games) are filled in with random opponents until you add them. Teams are ranked in each conference by wins. Ties use the official order: head-to-head, division winner, conference record, then point differential (the record-against-playoff-teams steps are skipped, a few multi-team rules are simplified, and simulated margins are generic). The play-in and playoffs are simulated in the Championship odds table.</p>
       </details>
     </div>
     <div class="card empty" id="simEmpty">
@@ -581,6 +581,8 @@ const LEAGUE = {
   groupWord:'Conference',
   zones:[{to:6, cls:'z1', label:'playoffs'}, {to:10, cls:'z2', label:'play-in'}, {to:15, cls:'z3', label:'lottery'}],
   tops:[6, 10],
+  tiebreak:'nba',
+  divisions:[['BOS','BKN','NYK','PHI','TOR'], ['CHI','CLE','DET','IND','MIL'], ['ATL','CHA','MIA','ORL','WAS'], ['DEN','MIN','OKC','POR','UTA'], ['GSW','LAC','LAL','PHX','SAC'], ['DAL','HOU','MEM','NOP','SAS']],
   playoff:{rounds:[7, 7, 7, 7], playIn:true, names:['First round', 'Second round', 'Conference finals', 'Finals']},
   games:82, stdTotal:1230,
   liveLabel:'2026-27', liveFile:'data/season.json', defaultDate:'2026-10-20',
@@ -1669,12 +1671,23 @@ function createSimulation(opts){
   const keys = CUR_IDX.map(function(i){ return F[i].k; }), n = keys.length, idx = {};
   keys.forEach(function(k, i){ idx[k] = i; });
   const base = new Int32Array(n), gp = new Int32Array(n), homeCnt = new Int32Array(n), rem = [];
+  const nn = n * n, grp = new Int8Array(n).fill(-1), div = new Int8Array(n).fill(-1);
+  GROUPS.forEach(function(g, z){ g.teams.forEach(function(k){ if(idx[k] !== undefined) grp[idx[k]] = z; }); });
+  (LEAGUE.divisions || []).forEach(function(d, z){ d.forEach(function(k){ if(idx[k] !== undefined) div[idx[k]] = z; }); });
+  const mkT = function(){ return {hw:new Int16Array(nn), gm:new Int16Array(nn), pd:new Float64Array(nn), tp:new Float64Array(n), cw:new Int16Array(n), cg:new Int16Array(n)}; };
+  const B = mkT(), SX = mkT();
+  function rec(o, h, a, hwin, m){
+    const wI = hwin ? h : a, lI = hwin ? a : h;
+    o.hw[wI * n + lI]++; o.gm[h * n + a]++; o.gm[a * n + h]++;
+    o.pd[wI * n + lI] += m; o.pd[lI * n + wI] -= m; o.tp[wI] += m; o.tp[lI] -= m;
+    if(grp[h] === grp[a]){ o.cg[h]++; o.cg[a]++; o.cw[wI]++; }
+  }
   let played = 0;
   LG.forEach(function(x){
     if(!inStandings(x)) return;
     const h = idx[x.home], a = idx[x.away]; if(h === undefined || a === undefined) return;
     gp[h]++; gp[a]++; homeCnt[h]++;
-    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; }
+    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; rec(B, h, a, x.hPts > x.aPts, Math.abs(x.hPts - x.aPts)); }
     else rem.push(h, a, x.neu ? 1 : 0);
   });
   const need = new Int32Array(n); let missingSlots = 0, totalNeed = 0;
@@ -1696,7 +1709,54 @@ function createSimulation(opts){
     let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
     if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
     const i = x | 0, p = TAB[i] + (TAB[i + 1] - TAB[i]) * (x - i);
-    if(rnd() < p) w[h]++; else w[a]++;
+    const hwin = rnd() < p; if(hwin) w[h]++; else w[a]++;
+    rec(SX, h, a, hwin, Math.round(Math.abs(randn()) * sn.sd) + 1);
+  }
+  // ---- real tiebreakers: ties in win percentage are broken inside each group ----
+  const DIVN = (LEAGUE.divisions || []).length, dw = new Uint8Array(n), pc = new Float64Array(n);
+  function orderBucket(b, det){
+    const m = b.length, sc = [];
+    b.forEach(function(t){
+      let hwS = 0, gmS = 0, pdS = 0;
+      b.forEach(function(j){ if(j !== t){ hwS += SX.hw[t * n + j]; gmS += SX.gm[t * n + j]; pdS += SX.pd[t * n + j]; } });
+      const h2h = gmS ? hwS / gmS : 0.5, v = [];
+      if(LEAGUE.tiebreak === 'nba'){
+        const same = m === 2 && div[b[0]] >= 0 && div[b[0]] === div[b[1]];
+        const dv = m === 2 ? (same ? dw[t] : 0) : dw[t], cf = SX.cg[t] ? SX.cw[t] / SX.cg[t] : 0.5;
+        if(m === 2) v.push(h2h, dv, cf, SX.tp[t]); else v.push(dv, h2h, cf, SX.tp[t]);
+      } else {
+        let ws = 0, gs = 0;
+        for(let j = 0; j < n; j++){ if(j !== t && pc[j] >= 0.5){ ws += SX.hw[t * n + j]; gs += SX.gm[t * n + j]; } }
+        v.push(h2h, gs ? ws / gs : 0.5, pdS, SX.tp[t]);
+      }
+      v.push(det ? mu[t] : rnd());
+      sc.push({t:t, v:v});
+    });
+    sc.sort(function(p, q){
+      for(let k = 0; k < p.v.length; k++){ const d = q.v[k] - p.v[k]; if(Math.abs(d) > 1e-9) return d > 0 ? 1 : -1; }
+      return 0;
+    });
+    return sc.map(function(x){ return x.t; });
+  }
+  function assignKeys(det){
+    for(let i = 0; i < n; i++){ pc[i] = gms[i] > 0 ? w[i] / gms[i] : 0.5; key[i] = pc[i]; }
+    if(DIVN){
+      dw.fill(0);
+      for(let z = 0; z < DIVN; z++){
+        let best = -1, bv = -1;
+        for(let i = 0; i < n; i++){ if(div[i] === z){ const v = pc[i] + (det ? mu[i] * 1e-6 : rnd() * 1e-6); if(v > bv){ bv = v; best = i; } } }
+        if(best >= 0) dw[best] = 1;
+      }
+    }
+    GI.forEach(function(g){
+      const srt = g.slice().sort(function(p, q){ return pc[q] - pc[p]; }), fin = [];
+      for(let i = 0; i < srt.length;){
+        let j = i + 1; while(j < srt.length && Math.abs(pc[srt[j]] - pc[srt[i]]) < 1e-9) j++;
+        if(j - i > 1) orderBucket(srt.slice(i, j), det).forEach(function(t){ fin.push(t); }); else fin.push(srt[i]);
+        i = j;
+      }
+      fin.forEach(function(t, p){ key[t] = pc[t] + (fin.length - p) * 1e-5; });
+    });
   }
   function rankConf(ci){
     const m = ci.length;
@@ -1736,7 +1796,9 @@ function createSimulation(opts){
   known.forEach(function(s){ s.sched.sort(function(p, q){ return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }); });
   let fixedBracket = null;
   if(serList.length){
-    const pct = function(i){ return (gp[i] ? base[i] / gp[i] : 0.5) + mu[i] * 1e-6; };
+    w.set(base); gms.set(gp); SX.hw.set(B.hw); SX.gm.set(B.gm); SX.pd.set(B.pd); SX.tp.set(B.tp); SX.cw.set(B.cw); SX.cg.set(B.cg);
+    assignKeys(true); const pk = key.slice();
+    const pct = function(i){ return pk[i]; };
     const first = new Map();
     serList.forEach(function(s){ [s.x, s.y].forEach(function(t){ const f = first.get(t); if(!f || s.first < f.first) first.set(t, s); }); });
     fixedBracket = GI.map(function(g){
@@ -1799,12 +1861,13 @@ function createSimulation(opts){
     for(let s = 0; s < count; s++){
       for(let i = 0; i < n; i++) str[i] = mu[i] + (opts.uncertainty ? phi[i] * randn() : 0);
       w.set(base); gms.set(gp);
+      SX.hw.set(B.hw); SX.gm.set(B.gm); SX.pd.set(B.pd); SX.tp.set(B.tp); SX.cw.set(B.cw); SX.cg.set(B.cg);
       if(rsDone){
-        for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + mu[i] * 1e-6; sumW[i] += w[i]; }
+        assignKeys(true); for(let i = 0; i < n; i++) sumW[i] += w[i];
       } else {
         for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
         if(totalNeed > 1) playFill();
-        for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + rnd() * 1e-7; sumW[i] += w[i]; }
+        assignKeys(false); for(let i = 0; i < n; i++) sumW[i] += w[i];
         GI.forEach(rankConf);
       }
       runPlayoffs(); sim.done++;
