@@ -368,7 +368,7 @@ tr.clk{cursor:pointer}
       <div class="controls">
         <label>Seasons <input type="number" id="simN" value="10000" min="100" max="200000" step="1000" style="width:100px"></label>
         <label><input type="checkbox" id="simUnc" checked> Include rating uncertainty</label>
-        <label><input type="checkbox" id="simFill" checked> Generate games missing from the schedule</label>
+        <label id="simFillRow"><input type="checkbox" id="simFill" checked> Generate games missing from the schedule</label>
       </div>
       <div class="controls">
         <button class="primary" id="btnSim">Simulate 10,000 seasons</button>
@@ -386,6 +386,11 @@ tr.clk{cursor:pointer}
         <h2>No simulation yet</h2>
         <p>Press Simulate to play out the remaining games and see each team's chance of finishing in every spot of its conference.</p>
       </div>
+    </div>
+    <div class="card data pad scroll" id="simChamp" hidden>
+      <h2>Championship odds</h2>
+      <p class="hint" id="simChampNote"></p>
+      <table class="simtbl" id="simTblC"></table>
     </div>
     <div class="card data pad scroll" id="simOut" hidden>
       <h2 id="simTitleE"></h2>
@@ -576,6 +581,7 @@ const LEAGUE = {
   groupWord:'Conference',
   zones:[{to:6, cls:'z1', label:'playoffs'}, {to:10, cls:'z2', label:'play-in'}, {to:15, cls:'z3', label:'lottery'}],
   tops:[6, 10],
+  playoff:{rounds:[7, 7, 7, 7], playIn:true, names:['First round', 'Second round', 'Conference finals', 'Finals']},
   games:82, stdTotal:1230,
   liveLabel:'2026-27', liveFile:'data/season.json', defaultDate:'2026-10-20',
   hasPostRound:true,
@@ -1649,6 +1655,16 @@ function randn(){
   let u = 0, v = 0; while(u === 0) u = rnd(); while(v === 0) v = rnd();
   const r = Math.sqrt(-2 * Math.log(u)); _spare = r * Math.sin(2 * Math.PI * v); return r * Math.cos(2 * Math.PI * v);
 }
+function rsStatus(){
+  const cnt = {}; CUR_IDX.forEach(function(i){ cnt[F[i].k] = 0; });
+  let left = 0;
+  LG.forEach(function(x){
+    if(!inStandings(x) || cnt[x.home] === undefined || cnt[x.away] === undefined) return;
+    cnt[x.home]++; cnt[x.away]++; if(!isPlayed(x)) left++;
+  });
+  let miss = 0; Object.keys(cnt).forEach(function(k){ miss += Math.max(0, SEASON_GAMES - cnt[k]); });
+  return {left:left, miss:miss, done:left === 0 && miss === 0};
+}
 function createSimulation(opts){
   const keys = CUR_IDX.map(function(i){ return F[i].k; }), n = keys.length, idx = {};
   keys.forEach(function(k, i){ idx[k] = i; });
@@ -1669,11 +1685,13 @@ function createSimulation(opts){
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd, LIM = 6, TN = 2400, TAB = new Float64Array(TN + 1);
   for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
   const SC = TN / (2 * LIM), hh = sn.hca / Q;
+  const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'};
+  const reach = new Float64Array(n * (NR + 1));
   const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
   const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
   const GI = GROUPS.map(function(g){ return g.teams.map(function(k){ return idx[k]; }).filter(function(i){ return i !== undefined; }); });
   const pos = new Int32Array(n * SL), sumW = new Float64Array(n);
-  const sim = {done:0, played:played, scheduled:rem.length / 3, missing:Math.floor(missingSlots / 2), generated:Math.floor(totalNeed / 2)};
+  const sim = {rsDone:rsDone, done:0, played:played, scheduled:rem.length / 3, missing:Math.floor(missingSlots / 2), generated:Math.floor(totalNeed / 2)};
   function play(h, a, neu){
     let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
     if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
@@ -1705,14 +1723,91 @@ function createSimulation(opts){
       hn[h]--; gms[h]++; gms[a]++; play(h, a, 0);
     }
   }
+  // ---- playoffs ----
+  const known = new Map(), serList = [];
+  LG.forEach(function(x){
+    if(x.type !== 'P') return;
+    const h = idx[x.home], a = idx[x.away]; if(h === undefined || a === undefined) return;
+    const lo = Math.min(h, a), hi = Math.max(h, a), kk2 = lo * n + hi; let s = known.get(kk2);
+    if(!s){ s = {x:lo, y:hi, wx:0, wy:0, sched:[], first:x.date}; known.set(kk2, s); serList.push(s); }
+    if(x.date < s.first) s.first = x.date;
+    if(isPlayed(x)){ const win = x.hPts > x.aPts ? h : a; if(win === lo) s.wx++; else s.wy++; } else s.sched.push({h:h, a:a, date:x.date});
+  });
+  known.forEach(function(s){ s.sched.sort(function(p, q){ return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }); });
+  let fixedBracket = null;
+  if(serList.length){
+    const pct = function(i){ return (gp[i] ? base[i] / gp[i] : 0.5) + mu[i] * 1e-6; };
+    const first = new Map();
+    serList.forEach(function(s){ [s.x, s.y].forEach(function(t){ const f = first.get(t); if(!f || s.first < f.first) first.set(t, s); }); });
+    fixedBracket = GI.map(function(g){
+      const r1 = serList.filter(function(s){ return g.indexOf(s.x) >= 0 && first.get(s.x) === s && first.get(s.y) === s; });
+      const rank = g.slice().sort(function(p, q){ return pct(q) - pct(p); }), sd = function(t){ return rank.indexOf(t); };
+      r1.sort(function(p, q){ return Math.min(sd(p.x), sd(p.y)) - Math.min(sd(q.x), sd(q.y)); });
+      const ord = r1.length === 4 ? [0, 3, 2, 1] : r1.map(function(z, i){ return i; }), out = new Array(r1.length * 2);
+      r1.forEach(function(s, i){ const hi2 = sd(s.x) < sd(s.y) ? s.x : s.y, lo2 = hi2 === s.x ? s.y : s.x; out[2 * ord[i]] = hi2; out[2 * ord[i] + 1] = lo2; });
+      return out;
+    });
+  }
+  function pgame(h, a){
+    let x = (str[h] + hh - str[a] + LIM) * SC;
+    if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
+    const i = x | 0, p = TAB[i] + (TAB[i + 1] - TAB[i]) * (x - i);
+    return rnd() < p ? h : a;
+  }
+  function series(a, b, rd){
+    const len = PO.rounds[rd], need = (len + 1) >> 1, pat = PAT[len] || PAT[7];
+    const k = known.get(Math.min(a, b) * n + Math.max(a, b));
+    let wa = 0, wb = 0, sched = null, si = 0;
+    if(k){ wa = a === k.x ? k.wx : k.wy; wb = a === k.x ? k.wy : k.wx; sched = k.sched; }
+    let g = wa + wb;
+    const higher = key[a] >= key[b] ? a : b, lower = higher === a ? b : a;
+    while(wa < need && wb < need){
+      let h, aw;
+      if(sched && si < sched.length){ h = sched[si].h; aw = sched[si].a; si++; }
+      else { h = pat[g % pat.length] === 'H' ? higher : lower; aw = h === a ? b : a; }
+      if(pgame(h, aw) === a) wa++; else wb++;
+      g++;
+    }
+    return wa >= need ? a : b;
+  }
+  function bracketFromSeeds(gi){
+    const g = GI[gi].slice().sort(function(p, q){ return key[q] - key[p]; });
+    let s7 = g[6], s8 = g[7];
+    if(PO.playIn){
+      const w1 = pgame(g[6], g[7]), l1 = w1 === g[6] ? g[7] : g[6], w2 = pgame(g[8], g[9]);
+      s7 = w1; s8 = pgame(l1, w2);
+    }
+    return [g[0], s8, g[3], g[4], g[2], g[5], g[1], s7];
+  }
+  function runPlayoffs(){
+    let cur = GI.map(function(g, gi){ return fixedBracket ? fixedBracket[gi].slice() : bracketFromSeeds(gi); });
+    const mark = function(r){ cur.forEach(function(g){ g.forEach(function(t){ reach[t * (NR + 1) + r]++; }); }); };
+    let rd = 0; mark(0);
+    for(let guard = 0; guard < 12; guard++){
+      cur = cur.map(function(g){
+        if(g.length < 2) return g;
+        const nx = []; for(let i = 0; i + 1 < g.length; i += 2) nx.push(series(g[i], g[i + 1], rd));
+        return nx;
+      });
+      rd++;
+      if(cur.length > 1 && cur.every(function(g){ return g.length === 1; })) cur = [cur.map(function(g){ return g[0]; })];
+      if(cur.length === 1 && cur[0].length === 1){ reach[cur[0][0] * (NR + 1) + NR]++; break; }
+      mark(rd);
+    }
+  }
   sim.run = function(count){
     for(let s = 0; s < count; s++){
       for(let i = 0; i < n; i++) str[i] = mu[i] + (opts.uncertainty ? phi[i] * randn() : 0);
       w.set(base); gms.set(gp);
-      for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
-      if(totalNeed > 1) playFill();
-      for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + rnd() * 1e-7; sumW[i] += w[i]; }
-      GI.forEach(rankConf); sim.done++;
+      if(rsDone){
+        for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + mu[i] * 1e-6; sumW[i] += w[i]; }
+      } else {
+        for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
+        if(totalNeed > 1) playFill();
+        for(let i = 0; i < n; i++){ key[i] = (gms[i] > 0 ? w[i] / gms[i] : 0.5) + rnd() * 1e-7; sumW[i] += w[i]; }
+        GI.forEach(rankConf);
+      }
+      runPlayoffs(); sim.done++;
     }
   };
   sim.results = function(){
@@ -1721,7 +1816,8 @@ function createSimulation(opts){
       const p = [], tp = LEAGUE.tops.map(function(){ return 0; });
       for(let q = 0; q < SL; q++){ const f = pos[i * SL + q] / d; p.push(f); LEAGUE.tops.forEach(function(c, z){ if(q < c) tp[z] += f; }); }
       let gi = 0; GI.forEach(function(g, z){ if(g.indexOf(i) >= 0) gi = z; });
-      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp};
+      const rc = []; for(let r = 0; r <= NR; r++) rc.push(reach[i * (NR + 1) + r] / d);
+      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp, reach:rc};
     });
   };
   return sim;
@@ -1737,9 +1833,15 @@ function simCounts(){
   let miss = 0; Object.keys(cnt).forEach(function(k){ miss += Math.max(0, SEASON_GAMES - cnt[k]); });
   return {played:played, left:left, missing:Math.floor(miss / 2)};
 }
-function updateSimBtn(){ const n = parseInt($('#simN').value, 10); $('#btnSim').textContent = 'Simulate ' + (n > 0 ? fmtInt(n) : '') + ' seasons'; }
+function updateSimBtn(){ const n = parseInt($('#simN').value, 10); $('#btnSim').textContent = 'Simulate ' + (n > 0 ? fmtInt(n) : '') + (rsStatus().done ? ' playoffs' : ' seasons'); }
 function updateSimInfo(){
   const el = $('#simInfo'); if(!el || !R) return;
+  if(rsStatus().done){
+    $('#simFillRow') && ($('#simFillRow').hidden = true);
+    el.textContent = 'The regular season is over, so only the playoffs are simulated: every team still alive plays out the rest of the bracket.';
+    return;
+  }
+  $('#simFillRow') && ($('#simFillRow').hidden = false);
   const c = simCounts(), fill = $('#simFill').checked;
   let t = fmtInt(c.played) + ' standings games played · ' + fmtInt(c.left) + ' scheduled to go · ' + fmtInt(c.missing) + ' not in the schedule yet (to reach ' + SEASON_GAMES + ' per team).';
   if(c.missing > 0) t += fill ? ' Those are generated randomly in every simulated season until you add the real games.' : ' Without generating them, teams play different numbers of games and the table is not meaningful.';
@@ -1753,7 +1855,29 @@ function pctCell(f, tip){
   const a = Math.round(Math.min(0.85, f * 1.6) * 100);
   return '<td class="pc"' + ti + ' style="background:color-mix(in srgb, var(--accent) ' + a + '%, transparent)' + (a > 58 ? ';color:var(--accent-ink)' : '') + '">' + (f * 100).toFixed(1) + '</td>';
 }
+function renderChamp(res, n, rsDone){
+  const NR = LEAGUE.playoff.rounds.length, names = LEAGUE.playoff.names;
+  let rows = res.filter(function(r){ return r.reach[NR] > 0; }).sort(function(a, b){ return b.reach[NR] - a.reach[NR]; });
+  const cols = [];
+  for(let r = 0; r <= NR; r++){
+    if(r === NR || !rows.every(function(x){ return x.reach[r] > 0.9999; })) cols.push(r);
+  }
+  let h = '<thead><tr><th class="l">Team</th>' + cols.map(function(r){
+    return '<th title="' + (r === NR ? 'Wins the title' : r === 0 ? 'Makes the playoffs' : 'Reaches the ' + names[r].toLowerCase()) + '">' + (r === NR ? 'Champion' : r === 0 ? 'Playoffs' : names[r]) + '</th>';
+  }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(x){
+    h += '<tr><td class="l">' + badge(x.f, LIVE_Y) + eraOf(F[x.f], LIVE_Y).nick + '</td>' + cols.map(function(r){
+      return pctCell(x.reach[r], tname(x.f, LIVE_Y) + (r === NR ? ' wins the title' : ' reaches this round') + ' in ' + (x.reach[r] * 100).toFixed(1) + '% of simulations');
+    }).join('') + '</tr>';
+  });
+  $('#simTblC').innerHTML = h + '</tbody>';
+  $('#simChampNote').textContent = (rows.length ? rows.length + ' teams still have a chance. ' : '') + 'Playoff series are played with the current ratings, home court to the better record, and every game still to be played in a series that is already under way uses the real schedule. Based on ' + fmtInt(n) + ' simulations.';
+  $('#simChamp').hidden = false;
+}
 function renderSim(res, n){
+  const rsDone = rsStatus().done;
+  renderChamp(res, n, rsDone);
+  if(rsDone){ $('#simOut').hidden = true; $('#simOutW').hidden = true; $('#simEmpty').hidden = true; return; }
   GROUPS.forEach(function(gr){
     const sl = gr.slot;
     const rows = res.filter(function(r){ return r.conf === gr.id; }).sort(function(a, b){ return b.avgW - a.avgW; });
