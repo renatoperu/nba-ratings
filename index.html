@@ -316,7 +316,7 @@ tr.clk{cursor:pointer}
           <th title="Record so far (regular season + NBA Cup games that count)">W-L</th>
           <th title="Expected wins-losses in the games still to play, using today's ratings">Rest</th>
           <th title="Expected final record: current record + expected rest of season">Final</th>
-          <th title="Strength of schedule: average rating of the opponents in the remaining games">SOS</th></tr></thead>
+          <th title="Remaining strength of schedule: average rating of the opponents still to play, adjusted for home court">SOS</th></tr></thead>
           <tbody></tbody>
         </table></div>
         <p class="hint">Tap a team for its season detail. Projections use today's ratings for every remaining game (home edge included) and are not simulated; use the Simulate tab for playoff odds.</p>
@@ -353,7 +353,7 @@ tr.clk{cursor:pointer}
     <div id="gLive" hidden>
       <div class="card data scroll">
         <table id="liveTbl">
-          <thead><tr><th class="l hide-s">Date</th><th class="l hide-s">Type</th><th class="l">Away</th><th>Pts</th><th></th><th>Pts</th><th class="l">Home</th><th class="l" title="Home win probability: pre-game for played games, with current ratings for the rest">Home win %</th><th class="hide-s" title="Rating change away / home">Δ away / home</th><th class="hide-s"></th></tr></thead>
+          <thead><tr><th class="l hide-s">Date</th><th class="l hide-s">Type</th><th class="l">Away</th><th>Pts</th><th></th><th>Pts</th><th class="l">Home</th><th class="l" title="Home win probability and expected point spread (negative = home team favoured): pre-game for played games, with current ratings for the rest">Home win %</th><th class="hide-s" title="Rating change away / home">Δ away / home</th><th class="hide-s"></th></tr></thead>
           <tbody id="gLiveBody"></tbody>
         </table>
       </div>
@@ -947,7 +947,7 @@ function renderRatings(){
 const GAMES82 = LEAGUE.games;
 function isLiveView(){ return cur().y === LIVE_Y; }
 function projection(){
-  const st = R.state, rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
+  const st = R.state, sn = R.seasons[R.seasons.length - 1], rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
   CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
   LG.forEach(function(g){
     if(!inStandings(g)) return;
@@ -958,7 +958,8 @@ function projection(){
     } else {
       const p = liveProb(g.home, g.away, g.neu);
       P[h].left++; P[a].left++; P[h].ew += p; P[a].ew += 1 - p;
-      P[h].sosS += rat(a); P[h].sosN++; P[a].sosS += rat(h); P[a].sosN++;
+      const eh = g.neu ? 0 : sn.hca;   // venue-adjusted opponent strength: a road opponent counts as stronger by the home edge
+      P[h].sosS += rat(a) - eh; P[h].sosN++; P[a].sosS += rat(h) + eh; P[a].sosN++;
       P[h].upc.push({date:g.date, opp:a, home:true, p:p, type:g.type}); P[a].upc.push({date:g.date, opp:h, home:false, p:1 - p, type:g.type});
     }
   });
@@ -968,7 +969,7 @@ function projection(){
     const avg = x.left ? x.ew / x.left : 0.5;
     x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
     x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
-    x.sosRest = x.sosN > 0; x.sos = x.sosN ? x.sosS / x.sosN : (x.sosAN ? x.sosAS / x.sosAN : NaN);
+    x.sos = x.sosN ? x.sosS / x.sosN : NaN;
     x.conf = GROUP_OF[F[f].k].id;
     x.upc.sort(function(p, q){ return p.date < q.date ? -1 : 1; });
   });
@@ -1041,7 +1042,7 @@ function openTeam(f, noPush){
     '<div class="tile"><b>' + w + '-' + lo + '</b><span>Record</span></div>' +
     (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>' + (proj.rest > 0 ? 'Projected final' : 'Regular season') + '</span></div>' +
       (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' : '') +
-      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, ' + (proj.sosRest ? 'remaining' : 'season') + '</span></div>' : '') +
+      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' : '') +
     '</div>' +
     '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
     '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : 'l') + '">' + (x.win ? 'W' : 'L') + '</i>'; }).join('') + '</div>' +
@@ -1051,7 +1052,7 @@ function openTeam(f, noPush){
     }).join('') + '</tbody></table>';
   if(proj && proj.upc.length){
     h += '<h3>Next games</h3><table class="td-t"><tbody>' + proj.upc.slice(0, 6).map(function(u){
-      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win</td></tr>';
+      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win \u00b7 ' + sgn(-Math.round(spreadOf(u.p) * 2) / 2, 1) + '</td></tr>';
     }).join('') + '</tbody></table>';
   }
   $('#tdBody').innerHTML = h;
@@ -1364,6 +1365,8 @@ function liveProb(hK, aK, neu){
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd;
   return normCdf(normInv(e) * kk);
 }
+// expected margin (home minus away) from a home win probability: the margin spread of the season turns a win chance into points
+function spreadOf(p){ const sn = R.seasons[R.seasons.length - 1]; return sn.sd * normInv(Math.min(0.999, Math.max(0.001, p))); }
 function afterLiveChange(full){
   const oldLen = cur().days.length, wasEnd = pos >= oldLen, wasLive = cur().y === LIVE_Y;
   saveLive(); computeLive(); deriveChamps();
@@ -1404,7 +1407,7 @@ function liveCellsFor(g){
   const gi = liveGi.get(g.id), done = gi !== undefined;
   const p = done ? R.pH[gi] : liveProb(g.home, g.away, g.neu);
   const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
-  return {pred:g.home + ' ' + Math.round(p * 100) + '%', w:Math.round(p * 100), done:done,
+  return {pred:g.home + ' ' + Math.round(p * 100) + '% \u00b7 ' + sgn(-Math.round(spreadOf(p) * 2) / 2, 1), w:Math.round(p * 100), done:done,
     dl:done ? '<span class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</span> / <span class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</span>' : ''};
 }
 function renderLiveGames(){
