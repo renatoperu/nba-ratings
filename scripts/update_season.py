@@ -14,6 +14,9 @@ produces no commit. On a download or parsing failure the existing file is left u
 import argparse, io, json, os, sys, datetime as dt
 import pandas as pd
 
+ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/{lg}/scoreboard?dates={d}&limit=300"
+ESPN_DAYS_BACK = 3   # how many past days (ET) are re-read from ESPN on every run
+
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 LEAGUES = {
     "nba": dict(
@@ -84,12 +87,106 @@ def convert(df):
     return rows
 
 
+def espn_type(season_type, headline):
+    """Same game types as the hoopR path, from an ESPN scoreboard event."""
+    return game_type(season_type, headline)
+
+
+def parse_espn(payload):
+    """ESPN scoreboard JSON -> rows [date(ET), away, home, type, neutral, awayPts|None, homePts|None]. Unknown shapes raise."""
+    rows = []
+    for ev in payload["events"]:
+        comp = ev["competitions"][0]
+        st = ((comp.get("status") or ev.get("status") or {}).get("type") or {})
+        name = st.get("name", "")
+        if name in ("STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_TBD"):
+            continue
+        home = next(c for c in comp["competitors"] if c["homeAway"] == "home")
+        away = next(c for c in comp["competitors"] if c["homeAway"] == "away")
+        a = L["abbr"].get(away["team"]["abbreviation"], away["team"]["abbreviation"])
+        b = L["abbr"].get(home["team"]["abbreviation"], home["team"]["abbreviation"])
+        if a not in L["fr"] or b not in L["fr"]:
+            continue
+        notes = comp.get("notes") or ev.get("notes") or []
+        headline = notes[0].get("headline", "") if notes else ""
+        if "All-Star" in headline:
+            continue
+        stype = int((ev.get("season") or {}).get("type", 2))
+        if stype not in (2, 3, 5):
+            continue
+        day = pd.Timestamp(ev["date"]).tz_convert("America/New_York").strftime("%Y-%m-%d")
+        done = name == "STATUS_FINAL"
+        ap = int(float(away["score"])) if done else None
+        hp = int(float(home["score"])) if done else None
+        if done and ap == hp:
+            ap = hp = None
+        rows.append([day, a, b, espn_type(stype, headline), 1 if comp.get("neutralSite") else 0, ap, hp])
+    return rows
+
+
+def fetch_espn(lg, days, fixture_dir=None):
+    """One request per day; returns (rows, errors). Never raises."""
+    rows, errors = [], []
+    for d in days:
+        key = d.replace("-", "")
+        try:
+            if fixture_dir:
+                with open(os.path.join(fixture_dir, key + ".json")) as f:
+                    payload = json.load(f)
+            else:
+                import requests
+                r = requests.get(ESPN.format(lg=lg, d=key), timeout=30, headers={"User-Agent": "Mozilla/5.0 (compatible; ratings-app)"})
+                r.raise_for_status()
+                payload = r.json()
+            rows += parse_espn(payload)
+        except FileNotFoundError:
+            pass
+        except Exception as e:                      # network, JSON shape, anything: skip this day, keep the rest
+            errors.append("%s: %s: %s" % (key, type(e).__name__, e))
+    return rows, errors
+
+
+def overlay_espn(games, lg, today, fixture_dir=None):
+    """Fill results (and add games) from ESPN's live scoreboard for the last few days. The hoopR rows stay the base."""
+    days = [(today - dt.timedelta(days=i)).isoformat() for i in range(ESPN_DAYS_BACK, -2, -1)]
+    espn, errors = fetch_espn(lg, days, fixture_dir)
+    idx = {(g[0], g[1], g[2]): g for g in games}
+    filled = added = changed = 0
+    for r in espn:
+        g = idx.get((r[0], r[1], r[2]))
+        if g is None and r[5] is not None:
+            # same teams a day either side, still without a result: the same game under a shifted date (UTC vs ET)
+            day = dt.date.fromisoformat(r[0])
+            for off in (-1, 1):
+                c = idx.get(((day + dt.timedelta(days=off)).isoformat(), r[1], r[2]))
+                if c is not None and c[5] is None:
+                    g = c
+                    break
+        if g is None:
+            if r[5] is None:
+                continue                      # never add unplayed games from ESPN; the schedule comes from hoopR
+            games.append(list(r)); idx[(r[0], r[1], r[2])] = games[-1]; added += 1
+            continue
+        if r[5] is not None and (g[5] != r[5] or g[6] != r[6]):
+            if g[5] is None: filled += 1
+            else: changed += 1
+            g[5], g[6] = r[5], r[6]
+    games.sort(key=lambda x: (x[0], x[1], x[2]))
+    print("ESPN %s: %d events over %d days, %d finished; filled %d results, %d corrected, %d games added; %d day(s) failed%s" % (
+        lg, len(espn), len(days), sum(1 for r in espn if r[5] is not None), filled, changed, added, len(errors),
+        ("  [" + "; ".join(errors[:3]) + "]") if errors else ""))
+    return games
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--league", choices=sorted(LEAGUES), default="nba")
     ap.add_argument("--source")
     ap.add_argument("--out")
     ap.add_argument("--year", type=int)
+    ap.add_argument("--no-espn", action="store_true", help="use only the hoopR table")
+    ap.add_argument("--espn-fixture", help="directory of YYYYMMDD.json files to read instead of the ESPN API (tests)")
+    ap.add_argument("--today", help="YYYY-MM-DD (ET); default: today")
     args = ap.parse_args()
     global L
     L = LEAGUES[args.league]
@@ -98,6 +195,12 @@ def main():
     try:
         df = load(args.source, args.year)
         games = convert(df)
+        if not args.no_espn:
+            today = dt.date.fromisoformat(args.today) if args.today else pd.Timestamp.now(tz="America/New_York").date()
+            try:
+                games = overlay_espn(games, args.league, today, args.espn_fixture)
+            except Exception as e:
+                print("WARNING: ESPN overlay skipped (%s: %s)" % (type(e).__name__, e))
         if len(games) < 100:
             raise RuntimeError("only %d games found; refusing to overwrite" % len(games))
     except Exception as e:
