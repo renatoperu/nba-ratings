@@ -2,7 +2,7 @@ name: Update data and publish
 
 on:
   schedule:
-    - cron: "25 */4 * * *"     # every 4 hours
+    - cron: "25 */2 * * *"     # every 2 hours
   workflow_dispatch:           # "Run workflow" button
   push:
     branches: [main]
