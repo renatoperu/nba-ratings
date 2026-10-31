@@ -34,19 +34,20 @@ jobs:
           pip install --quiet pandas pyarrow requests
           python scripts/update_season.py --league nba
           python scripts/update_season.py --league wnba
+          python scripts/update_season.py --league nhl
 
       - name: Save the data file
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/season.json data/wnba-season.json
+          git add data/season.json data/wnba-season.json data/nhl-season.json
           git diff --cached --quiet || (git commit -m "Update schedules and results" && git push)
 
       - name: Assemble the site
         run: |
           mkdir _site
-          cp -r index.html wnba.html manifest.webmanifest sw.js icons fonts data _site/
-          V=$(cat index.html wnba.html manifest.webmanifest icons/* fonts/* | sha256sum | cut -c1-12)
+          cp -r index.html wnba.html nhl.html manifest.webmanifest sw.js icons fonts data _site/
+          V=$(cat index.html wnba.html nhl.html manifest.webmanifest icons/* fonts/* | sha256sum | cut -c1-12)
           sed -i "s/__VERSION__/$V/" _site/sw.js
 
       - uses: actions/configure-pages@v5
