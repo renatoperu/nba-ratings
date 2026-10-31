@@ -27,3 +27,15 @@ Add / Import -> Check for updates now).
 - Next season: change `SEASON_YEAR` in `scripts/update_season.py` (2028 = the 2027-28 season) and rebuild the app file.
 - GitHub pauses scheduled jobs in repositories with no activity for 60 days; press **Run workflow** to wake it.
 - To test the data script locally: `pip install pandas pyarrow requests && python scripts/update_season.py`.
+
+## WNBA
+
+`wnba.html` is the WNBA version of the same app (2002–2026, live 2026 season). The NBA | WNBA | NHL switch at the top of every page moves between them, and the app opens on the league you used last. `scripts/update_season.py --league wnba` writes `data/wnba-season.json`; the workflow runs all three leagues.
+
+## Faster results (ESPN)
+
+`scripts/update_season.py` reads the daily hoopR/wehoop table first, then re-reads the last few days from ESPN's live scoreboard and fills in any results that the table doesn't have yet (it never adds unplayed games from ESPN). If ESPN can't be reached or its format changes, the run logs a warning and keeps the hoopR data. The workflow log line to look for: `ESPN nba: N events over 5 days, ... filled X results ... 0 day(s) failed`. Use `--no-espn` to turn it off.
+
+## NHL
+
+`nhl.html` is the NHL version (2005–06 on, live 2026-27 season). Ratings use goal difference, a shootout counts as a one-goal win, and standings use points (2 for a win, 1 for an overtime or shootout loss). `scripts/update_season.py --league nhl` writes `data/nhl-season.json`. The division alignment is hard-coded in `league_nhl.js` (in the build sources), so a realignment needs a rebuild.

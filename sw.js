@@ -2,11 +2,11 @@
 // data/season.json is fetched from the network first so results are as fresh as possible.
 const VERSION = '__VERSION__';
 const SHELL = [
-  './', 'index.html', 'wnba.html', 'manifest.webmanifest',
+  './', 'index.html', 'wnba.html', 'nhl.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'fonts/barlow-latin-400-normal.woff2', 'fonts/barlow-latin-500-normal.woff2', 'fonts/barlow-latin-600-normal.woff2', 'fonts/barlow-latin-700-normal.woff2',
   'fonts/big-shoulders-display-latin-700-normal.woff2', 'fonts/big-shoulders-display-latin-800-normal.woff2', 'fonts/big-shoulders-display-latin-900-normal.woff2',
-  'data/season.json', 'data/wnba-season.json'
+  'data/season.json', 'data/wnba-season.json', 'data/nhl-season.json'
 ];
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(VERSION).then(function(c){ return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); }));
@@ -27,7 +27,7 @@ self.addEventListener('fetch', function(e){
   }
   e.respondWith(caches.open(VERSION).then(function(c){
     return c.match(req, {ignoreSearch:true}).then(function(hit){
-      const net = fetch(req).then(function(r){ if(r && r.ok) c.put(req, r.clone()); return r; }).catch(function(){ return hit || (req.mode === 'navigate' ? c.match(url.pathname.endsWith('wnba.html') ? 'wnba.html' : 'index.html') : undefined); });
+      const net = fetch(req).then(function(r){ if(r && r.ok) c.put(req, r.clone()); return r; }).catch(function(){ return hit || (req.mode === 'navigate' ? c.match(url.pathname.endsWith('wnba.html') ? 'wnba.html' : url.pathname.endsWith('nhl.html') ? 'nhl.html' : 'index.html') : undefined); });
       return hit || net;
     });
   }));

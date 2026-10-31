@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<script>try{var id='nba',l=localStorage.getItem('lastLeague');if(!/[?&]lg=/.test(location.search)&&l&&l!==id){location.replace(l==='wnba'?'wnba.html':'index.html')}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
+<script>try{var id='nba',l=localStorage.getItem('lastLeague'),P={nba:'index.html',wnba:'wnba.html',nhl:'nhl.html'};if(!/[?&]lg=/.test(location.search)&&l&&l!==id&&P[l]){location.replace(P[l])}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
 <title>NBA Ratings</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0B1A3A">
@@ -181,6 +181,8 @@ td.res .dt{display:inline}
 .more{display:block;margin:12px auto}
 select.ty{font-size:12.5px;padding:3px 5px;max-width:132px}
 td.dl{font-size:13px}
+select.exs{font-size:11.5px;padding:2px 2px;margin-left:4px;max-width:56px}
+.chips10 i.o{background:var(--zone2);color:#fff}
 .seasons td.c{text-align:left}.seasons th,.seasons td{padding:8px 7px}.seasons .tb{margin-right:4px}
 tr.clk{cursor:pointer}
 .setgrid{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
@@ -250,7 +252,7 @@ tr.clk{cursor:pointer}
 <header class="hero">
   <div class="hero-in">
     <div class="hero-copy">
-      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="on">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a></nav>
+      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="on">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a><a href="nhl.html?lg=nhl" class="">NHL</a></nav>
       <h1>NBA power ratings <br>1946–2027</h1>
       <div class="seasonbar">
         <button id="prevS" aria-label="Previous season">◀</button>
@@ -335,7 +337,7 @@ tr.clk{cursor:pointer}
     <div class="controls">
       <label>Team <select id="gTeam"></select></label>
       <label>Type <select id="gType">
-        <option value="">All games</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option>
+        <option value="">All games</option><option value="R">Regular season</option><option value="C" data-cup>NBA Cup</option><option value="F" data-cup>Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option>
       </select></label>
       <label class="liveonly" hidden>Month <select id="gMonth"></select></label>
       <label class="liveonly" hidden>Show <select id="gStatus"><option value="all">All games</option><option value="open">Without result</option><option value="done">With result</option></select></label>
@@ -416,6 +418,7 @@ tr.clk{cursor:pointer}
           <label for="aHome">Home</label><select id="aHome"></select>
           <label>Score (away / home)</label>
           <div class="row2"><input type="number" id="aAP" min="0" max="250" style="width:84px"><span>/</span><input type="number" id="aHP" min="0" max="250" style="width:84px"></div>
+          <label for="aEx" data-ot>Decided in</label><select id="aEx" data-ot><option value="0">Regulation</option><option value="1">Overtime</option><option value="2">Shootout</option></select>
           <label for="aNeu">Neutral site</label><input type="checkbox" id="aNeu" style="justify-self:start">
         </div>
         <p><button class="primary" id="btnAdd">Add game</button></p>
@@ -427,7 +430,7 @@ tr.clk{cursor:pointer}
         <p><input type="file" id="fFiles" accept=".csv,.tsv,.txt" multiple></p>
         <textarea id="iText" placeholder="Date,Start (ET),Visitor/Neutral,PTS,Home/Neutral,PTS,...&#10;Tue, Oct 20, 2026,7:30p,San Antonio Spurs,,Oklahoma City Thunder,,..."></textarea>
         <div class="controls" style="margin-top:8px"><label>Type for rows without one
-          <select id="iType"><option value="auto">Auto (regular season, playoffs after it ends)</option><option value="R">Regular season</option><option value="C">NBA Cup</option><option value="F">Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option></select></label></div>
+          <select id="iType"><option value="auto">Auto (regular season, playoffs after it ends)</option><option value="R">Regular season</option><option value="C" data-cup>NBA Cup</option><option value="F" data-cup>Cup final</option><option value="I" data-playin>Play-in</option><option value="P">Playoffs</option></select></label></div>
         <p><button class="primary" id="btnImport">Import</button></p>
         <div class="msg" id="impMsg"></div>
         <p class="hint">Importing merges: new games are added and scores fill in results for games you already have. Re-import any time to load new results.</p>
@@ -503,8 +506,8 @@ tr.clk{cursor:pointer}
         <p class="hint">RD at season start is 100 by default (a grid over all 73,000 games found 75–150 about equally good; the best log loss was at 100). New franchises start at 350.</p>
         <div class="checks" style="margin:8px 0 12px">
           <label><input type="checkbox" data-t="R"> Regular season</label>
-          <label><input type="checkbox" data-t="C"> NBA Cup</label>
-          <label><input type="checkbox" data-t="F"> Cup final</label>
+          <label data-cup><input type="checkbox" data-t="C"> NBA Cup</label>
+          <label data-cup><input type="checkbox" data-t="F"> Cup final</label>
           <label data-playin><input type="checkbox" data-t="I"> Play-in</label>
           <label><input type="checkbox" data-t="P"> Playoffs</label>
         </div>
@@ -624,13 +627,14 @@ function decodeHistory(DATA){
   const years = Object.keys(DATA.g).map(Number).sort(function(a, b){ return a - b; });
   let n = 0; years.forEach(function(y){ n += DATA.g[y].length / 10; });
   const D = {F:F, n:n, day:new Int32Array(n), a:new Uint8Array(n), h:new Uint8Array(n), ap:new Int16Array(n), hp:new Int16Array(n),
-             ty:new Uint8Array(n), neu:new Uint8Array(n), season:new Int16Array(n), seasons:[]};
+             ty:new Uint8Array(n), neu:new Uint8Array(n), ex:new Uint8Array(n), season:new Int16Array(n), seasons:[]};
   let gi = 0;
   years.forEach(function(y){
     const s = DATA.g[y], g0 = gi;
     for(let i = 0; i < s.length; i += 10){
       D.day[gi] = parseInt(s.substr(i, 3), 36); D.a[gi] = L.indexOf(s[i+3]); D.h[gi] = L.indexOf(s[i+4]);
       D.ap[gi] = parseInt(s.substr(i+5, 2), 36); D.hp[gi] = parseInt(s.substr(i+7, 2), 36);
+      if(LEAGUE.ot){ const v = D.ap[gi]; D.ex[gi] = (v / 50) | 0; D.ap[gi] = v % 50; }   // hockey: the away score carries 50 x (0 regulation, 1 overtime, 2 shootout)
       const c = s[i+9]; D.ty[gi] = TYPE_LETTERS.indexOf(c.toUpperCase()); D.neu[gi] = (c === c.toLowerCase()) ? 1 : 0;
       D.season[gi] = y; gi++;
     }
@@ -671,7 +675,7 @@ function runHistory(D, S0, onProgress, resume){
     let hca = S.hcaMode === 'fixed' ? S.hca : S.hca0, sd = S.sd0;
     if(c >= 300){
       if(S.hcaMode === 'auto'){ const p = Math.min(0.9, Math.max(0.1, ss / c)); hca = Math.max(0, Math.min(80, Math.round(Q * Math.log(p / (1 - p)) / 0.98))); }
-      if(S.sdMode === 'auto'){ const mm = sm / c; sd = Math.min(18, Math.max(10, Math.sqrt(sm2 / c - mm * mm))); }
+      if(S.sdMode === 'auto'){ const mm = sm / c, rg = LEAGUE.sdRange || [10, 18]; sd = Math.min(rg[1], Math.max(rg[0], Math.sqrt(sm2 / c - mm * mm))); }
     }
     return {hca:hca, sd:sd};
   }
@@ -715,7 +719,7 @@ function runHistory(D, S0, onProgress, resume){
     const met = {n:0, ll:0, br:0, acc:0};
     const snapMu = new Float64Array(nT), snapPhi = new Float64Array(nT), chg = new Float64Array(nT), lastG = new Int32Array(nT);
     const ent = []; for(let l = 0; l < nT; l++) ent.push([]);
-    const kk = Math.sqrt(P.sd * P.sd + c15 * c15) / P.sd;
+    const kk = Math.sqrt(P.sd * P.sd + c15 * c15) / P.sd * (LEAGUE.kShrink || 1);   // kShrink < 1 pulls win probabilities toward 50% where the margin scale makes them overconfident (hockey)
     let p = 0, i = 0, rsEnd = -1;
     while(i < idx.length){
       const day = D.day[idx[i]]; let j = i; while(j < idx.length && D.day[idx[j]] === day) j++;
@@ -792,6 +796,9 @@ function saveSettings(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(iso){ return MONTHS[+iso.slice(5, 7) - 1] + ' ' + (+iso.slice(8)) + ', ' + iso.slice(0, 4); }
 function fmtInt(n){ return n.toLocaleString('en-US'); }
+const PTS = !!LEAGUE.points, HOT = !!LEAGUE.ot;      // hockey: standings in points, games can end in overtime or a shootout
+const EXN = ['', 'OT', 'SO'];
+const spr = function(p){ const k = 1 / (LEAGUE.spreadStep || 0.5); return sgn(-Math.round(spreadOf(p) * k) / k, 1); };
 function lum(hex){
   const n = parseInt(hex.slice(1), 16);
   const c = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
@@ -808,7 +815,7 @@ function gameText(gi, f){
   const y = D.season[gi], home = D.h[gi] === f, opp = home ? D.a[gi] : D.h[gi];
   const own = home ? D.hp[gi] : D.ap[gi], oth = home ? D.ap[gi] : D.hp[gi];
   const where = D.neu[gi] ? 'vs' : (home ? 'vs' : 'at');
-  return (own > oth ? 'W ' : 'L ') + own + '-' + oth + ' ' + where + ' ' + eraOf(F[opp], y).code + (D.neu[gi] ? ' (neutral)' : '');
+  return (own > oth ? 'W ' : 'L ') + own + '-' + oth + (HOT && D.ex[gi] ? ' ' + EXN[D.ex[gi]] : '') + ' ' + where + ' ' + eraOf(F[opp], y).code + (D.neu[gi] ? ' (neutral)' : '');
 }
 function typePill(gi){ const c = TYPE_LETTERS[D.ty[gi]]; return '<span class="pill ' + c + '">' + TYPE_NAMES[c] + '</span>'; }
 function recDesc(rec, f){
@@ -834,6 +841,7 @@ function compute(){
   $('#overlay').hidden = false; $('#overlayTxt').textContent = 'Rating ' + D0.seasons.length + ' seasons…';
   setTimeout(function(){
     R0 = runHistory(D0, S);
+    fitOT();
     computeLive();
     deriveChamps();
     si = Math.min(si, R.seasons.length - 1);
@@ -864,7 +872,7 @@ function fillSeasonSelect(){
 function fillTeamSelects(){
   const rows = F.map(function(f){ const last = f.e[f.e.length - 1]; return {i:f.idx, n:last[2] + ' ' + last[3] + (f.cur ? '' : ' (defunct)')}; });
   $('#hTeam').innerHTML = rows.map(function(r){ return '<option value="' + r.i + '">' + r.n + '</option>'; }).join('');
-  if(!$('#hTeam').dataset.set){ $('#hTeam').value = F.findIndex(function(f){ return f.k === 'LAL'; }); $('#hTeam').dataset.set = 1; }
+  if(!$('#hTeam').dataset.set){ const di = F.findIndex(function(f){ return f.k === (LEAGUE.defaultTeam || 'LAL'); }); $('#hTeam').value = di >= 0 ? di : 0; $('#hTeam').dataset.set = 1; }
 }
 function setSeason(i, keepPos){
   si = i; const sn = cur();
@@ -904,18 +912,21 @@ function renderRatings(){
   const sn = cur(), nT = sn.nT, y = sn.y, lim = dayLimit();
   $('#when').textContent = whenText();
   const loc = {}; sn.teams.forEach(function(f, l){ loc[f] = l; });
-  const rw = new Array(nT).fill(0), rl = new Array(nT).fill(0), pw = new Array(nT).fill(0), pl = new Array(nT).fill(0);
+  const rw = new Array(nT).fill(0), rl = new Array(nT).fill(0), ro = new Array(nT).fill(0), pw = new Array(nT).fill(0), pl = new Array(nT).fill(0);
+  let anyEx = false;
   for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(HOT && D.ex[gi]) anyEx = true;
     if(!R.used[gi] || D.day[gi] > lim) continue;
-    const t = D.ty[gi], hw = D.hp[gi] > D.ap[gi], h = loc[D.h[gi]], a = loc[D.a[gi]];
-    if(t <= 1){ if(hw){ rw[h]++; rl[a]++; } else { rw[a]++; rl[h]++; } }
+    const t = D.ty[gi], hw = D.hp[gi] > D.ap[gi], h = loc[D.h[gi]], a = loc[D.a[gi]], otl = HOT && D.ex[gi] > 0;
+    if(t <= 1){ const wI = hw ? h : a, lI = hw ? a : h; rw[wI]++; if(otl) ro[lI]++; else rl[lI]++; }
     else if(t >= 3){ if(hw){ pw[h]++; pl[a]++; } else { pw[a]++; pl[h]++; } }
   }
+  const showO = HOT && anyEx;
   const rows = sn.teams.map(function(f, l){
     const rating = pos === 0 ? sn.startRating[l] : sn.rate[(pos - 1) * nT + l];
     const rd = pos === 0 ? sn.startRD[l] : sn.rd[(pos - 1) * nT + l];
     const ser = [sn.startRating[l]]; for(let p = 0; p < pos; p++) ser.push(sn.rate[p * nT + l]);
-    return {f:f, l:l, name:tname(f, y), rating:rating, rd:rd, dlt:rating - sn.startRating[l], w:rw[l] + rl[l] ? rw[l] / (rw[l] + rl[l]) + rw[l] * 1e-4 : -1, rw:rw[l], rl:rl[l], pw:pw[l], pl:pl[l],
+    return {f:f, l:l, name:tname(f, y), rating:rating, rd:rd, dlt:rating - sn.startRating[l], w:rw[l] + rl[l] + ro[l] ? (PTS && showO ? (2 * rw[l] + ro[l]) / (2 * (rw[l] + rl[l] + ro[l])) : rw[l] / (rw[l] + rl[l] + ro[l])) + rw[l] * 1e-4 : -1, rw:rw[l], rl:rl[l], ro:ro[l], pw:pw[l], pl:pl[l],
       hiR:sn.hiR[l], loR:sn.loR[l], ser:ser};
   });
   const order = rows.slice().sort(function(a, b){ return b.rating - a.rating; }), rank = {};
@@ -935,7 +946,7 @@ function renderRatings(){
     return '<tr data-f="' + r.f + '"><td class="rk">' + rank[r.f] + '</td><td class="l">' + badge(r.f, y) + '<span class="hide-s">' + r.name + '</span>' + star + '</td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + r.rating.toFixed(0) + '</b><span class="rbar"><i style="width:' + barW + '%"></i></span></td>' +
       '<td class="' + cls + '">' + sgn(r.dlt, 1) + '</td><td class="mut hide-s">' + r.rd.toFixed(0) + '</td>' +
-      '<td>' + r.rw + '-' + r.rl + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
+      '<td>' + r.rw + '-' + r.rl + (showO ? '-' + r.ro : '') + (PTS && showO ? ' <span class="mut">' + (2 * r.rw + r.ro) + '</span>' : '') + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
       '<td class="hide-s">' + sparkline(r.ser) + '</td></tr>';
   }).join('');
   renderProj();
@@ -948,16 +959,19 @@ const GAMES82 = LEAGUE.games;
 function isLiveView(){ return cur().y === LIVE_Y; }
 function projection(){
   const st = R.state, sn = R.seasons[R.seasons.length - 1], rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
-  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
+  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, otl:0, pts:0, ept:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
   LG.forEach(function(g){
     if(!inStandings(g)) return;
     const h = FK[g.home], a = FK[g.away]; if(!P[h] || !P[a]) return;
     P[h].sosAS += rat(a); P[h].sosAN++; P[a].sosAS += rat(h); P[a].sosAN++;
     if(isPlayed(g)){
-      const hw = g.hPts > g.aPts; P[h][hw ? 'w' : 'l']++; P[a][hw ? 'l' : 'w']++;
+      const hw = g.hPts > g.aPts, wI = hw ? h : a, lI = hw ? a : h;
+      P[wI].w++;
+      if(PTS){ P[wI].pts += 2; if(g.ex > 0){ P[lI].otl++; P[lI].pts += 1; } else P[lI].l++; } else P[lI].l++;
     } else {
       const p = liveProb(g.home, g.away, g.neu);
       P[h].left++; P[a].left++; P[h].ew += p; P[a].ew += 1 - p;
+      if(PTS){ const e = ptsExp(p); P[h].ept += e[0]; P[a].ept += e[1]; }
       const eh = g.neu ? 0 : sn.hca;   // venue-adjusted opponent strength: a road opponent counts as stronger by the home edge
       P[h].sosS += rat(a) - eh; P[h].sosN++; P[a].sosS += rat(h) + eh; P[a].sosN++;
       P[h].upc.push({date:g.date, opp:a, home:true, p:p, type:g.type}); P[a].upc.push({date:g.date, opp:h, home:false, p:1 - p, type:g.type});
@@ -965,10 +979,11 @@ function projection(){
   });
   CUR_IDX.forEach(function(f){
     const x = P[f]; x.rating = rat(f);
-    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.left);
+    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.otl - x.left);
     const avg = x.left ? x.ew / x.left : 0.5;
     x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
     x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
+    if(PTS){ x.ept += x.unsched * (x.left ? x.ept / x.left : 1.1); x.projPts = x.pts + x.ept; }
     x.sos = x.sosN ? x.sosS / x.sosN : NaN;
     x.conf = GROUP_OF[F[f].k].id;
     x.upc.sort(function(p, q){ return p.date < q.date ? -1 : 1; });
@@ -983,25 +998,32 @@ function renderProj(){
   const P = projection(), sn = cur(), view = $('#projView').value;
   const list = CUR_IDX.map(function(f){ return P[f]; });
   const ovr = list.slice().sort(function(a, b){ return b.rating - a.rating; }), rk = {}; ovr.forEach(function(x, i){ rk[x.f] = i + 1; });
-  const byProj = function(a, b){ return b.projW - a.projW || b.rating - a.rating; };
+  const byProj = PTS ? function(a, b){ return b.projPts - a.projPts || b.rating - a.rating; } : function(a, b){ return b.projW - a.projW || b.rating - a.rating; };
+  const NC = PTS ? 8 : 7;
   const row = function(x, n){
     const c = F[x.f].c;
     return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span></td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + x.rating.toFixed(0) + '</b></td>' +
-      '<td>' + x.w + '-' + x.l + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td>' +
-      '<td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td><td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
+      (PTS ? '<td>' + x.w + '-' + x.l + '-' + x.otl + '</td><td><b>' + x.pts + '</b></td><td class="c2 mut">' + f1(x.ept) + '</td><td class="c2"><b>' + f1(x.projPts) + '</b></td>'
+           : '<td>' + x.w + '-' + x.l + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td><td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td>') +
+      '<td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
   };
   let html = '';
   if(view === 'conf' && GROUPS.length > 1){
     GROUPS.forEach(function(gr){
       const cf = gr.id;
-      html += '<tr class="grp"><td colspan="7">' + gr.label + ' ' + LEAGUE.groupWord + '</td></tr>';
+      html += '<tr class="grp"><td colspan="' + NC + '">' + gr.label + ' ' + LEAGUE.groupWord + '</td></tr>';
       list.filter(function(x){ return x.conf === cf; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
+    });
+  } else if(view === 'div' && LEAGUE.divisions && LEAGUE.divNames){
+    LEAGUE.divisions.forEach(function(dv, z){
+      html += '<tr class="grp"><td colspan="' + NC + '">' + LEAGUE.divNames[z] + ' Division</td></tr>';
+      list.filter(function(x){ return dv.indexOf(F[x.f].k) >= 0; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
     });
   } else list.slice().sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
   $('#projTbl tbody').innerHTML = html;
   const unsched = list[0].unsched;
-  $('#projNote').textContent = (list[0].rest === 0 ? 'Regular season complete: ranked by final record.' : 'Ranked by expected final wins.') + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
+  $('#projNote').textContent = (list[0].rest === 0 ? (PTS ? 'Regular season complete: ranked by final points.' : 'Regular season complete: ranked by final record.') : (PTS ? 'Ranked by expected final points.' : 'Ranked by expected final wins.')) + (unsched > 0 ? ' ' + unsched + ' games per team are not scheduled yet; they are projected at each team’s average remaining win chance.' : '');
 }
 function ratingAt(sn, l, day){ // rating after the last rating period on or before `day`
   let v = sn.startRating[l];
@@ -1020,14 +1042,16 @@ function openTeam(f, noPush){
   const rank = ord.findIndex(function(x){ return x.f === f; }) + 1;
   const dSeason = now.r - pts[0].r, dMonth = now.r - ratingAt(sn, l, last - 30), dWeek = now.r - ratingAt(sn, l, last - 7);
   // games
-  let w = 0, lo = 0; const lastGames = [];
+  let w = 0, lo = 0, otl = 0, anyEx = false; const lastGames = [];
   for(let gi = sn.g0; gi < sn.g1; gi++){
+    if(HOT && D.ex[gi]) anyEx = true;
     if(!R.used[gi] || D.day[gi] > lim || (D.h[gi] !== f && D.a[gi] !== f)) continue;
-    const home = D.h[gi] === f, win = home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi];
-    if(D.ty[gi] <= 1){ if(win) w++; else lo++; }
-    lastGames.push({gi:gi, home:home, win:win, opp:home ? D.a[gi] : D.h[gi]});
+    const home = D.h[gi] === f, win = home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi], isO = HOT && !win && D.ex[gi] > 0;
+    if(D.ty[gi] <= 1){ if(win) w++; else if(isO) otl++; else lo++; }
+    lastGames.push({gi:gi, home:home, win:win, ot:isO, opp:home ? D.a[gi] : D.h[gi]});
   }
-  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length;
+  const showO = HOT && anyEx, recTxt = w + '-' + lo + (showO ? '-' + otl : '');
+  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length, l10o = l10.filter(function(x){ return x.ot; }).length;
   const sg = function(v){ return '<b class="' + (v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut') + '">' + sgn(v, 1) + '</b>'; };
   let proj = null; if(live){ proj = projection()[f]; }
   let h = '<div class="td-h">' + badge(f, y) + '<h2>' + tname(f, y) + '</h2></div>' +
@@ -1038,21 +1062,24 @@ function openTeam(f, noPush){
     '<div class="tile">' + sg(dSeason) + '<span>Δ season</span></div>' +
     '<div class="tile">' + sg(dMonth) + '<span>Δ last 30 days</span></div>' +
     '<div class="tile">' + sg(dWeek) + '<span>Δ last 7 days</span></div>' +
-    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w) + '</b><span>Last ' + l10.length + '</span></div>' +
-    '<div class="tile"><b>' + w + '-' + lo + '</b><span>Record</span></div>' +
-    (proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>' + (proj.rest > 0 ? 'Projected final' : 'Regular season') + '</span></div>' +
+    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w - (showO ? l10o : 0)) + (showO ? '-' + l10o : '') + '</b><span>Last ' + l10.length + '</span></div>' +
+    '<div class="tile"><b>' + recTxt + '</b><span>Record' + (PTS && showO ? ' · ' + (2 * w + otl) + ' pts' : '') + '</span></div>' +
+    (proj && PTS ? '<div class="tile"><b>' + f1(proj.projPts) + '</b><span>' + (proj.rest > 0 ? 'Projected final points' : 'Final points') + '</span></div>' +
+      (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ept) + '</b><span>Expected points, rest (' + proj.rest + ' left)</span></div>' : '') +
+      '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' :
+    proj ? '<div class="tile"><b>' + f1(proj.projW) + '-' + f1(proj.projL) + '</b><span>' + (proj.rest > 0 ? 'Projected final' : 'Regular season') + '</span></div>' +
       (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ew) + '-' + f1(proj.rest - proj.ew) + '</b><span>Expected rest (' + proj.rest + ' left)</span></div>' : '') +
       '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' : '') +
     '</div>' +
     '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
-    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : 'l') + '">' + (x.win ? 'W' : 'L') + '</i>'; }).join('') + '</div>' +
+    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : x.ot ? 'o' : 'l') + '">' + (x.win ? 'W' : x.ot ? 'OTL' : 'L') + '</i>'; }).join('') + '</div>' +
     '<table class="td-t"><tbody>' + l10.map(function(x){
       const gi = x.gi, mine = x.home ? D.hp[gi] : D.ap[gi], theirs = x.home ? D.ap[gi] : D.hp[gi], dl = x.home ? R.dH[gi] : R.dA[gi];
-      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : 'down') + '">' + (x.win ? 'W' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
+      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : 'down') + '">' + (x.win ? 'W' : x.ot ? 'OTL' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + (HOT && D.ex[gi] ? ' <span class="mut">' + EXN[D.ex[gi]] + '</span>' : '') + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
     }).join('') + '</tbody></table>';
   if(proj && proj.upc.length){
     h += '<h3>Next games</h3><table class="td-t"><tbody>' + proj.upc.slice(0, 6).map(function(u){
-      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win \u00b7 ' + sgn(-Math.round(spreadOf(u.p) * 2) / 2, 1) + '</td></tr>';
+      return '<tr><td class="mut">' + fmtDate(u.date).replace(/, \d{4}/, '') + '</td><td>' + (u.home ? 'vs' : '@') + ' ' + badge(u.opp, y) + '</td><td>' + (u.p * 100).toFixed(0) + '% to win \u00b7 ' + spr(u.p) + '</td></tr>';
     }).join('') + '</tbody></table>';
   }
   $('#tdBody').innerHTML = h;
@@ -1061,7 +1088,11 @@ function openTeam(f, noPush){
   document.body.style.overflow = 'hidden';
   if(!noPush){ try{ history.pushState({dlg:1}, ''); }catch(e){} }
 }
-function CUR_CONF(f){ const g = GROUPS.length > 1 && F[f].cur ? GROUP_OF[F[f].k] : null; return g ? g.label.replace(/ern$/, '') : ''; }
+function CUR_CONF(f){
+  const g = GROUPS.length > 1 && F[f].cur ? GROUP_OF[F[f].k] : null, c = g ? g.label.replace(/ern$/, '') : '';
+  if(g && LEAGUE.divisions && LEAGUE.divNames){ const z = LEAGUE.divisions.findIndex(function(d){ return d.indexOf(F[f].k) >= 0; }); if(z >= 0) return LEAGUE.divNames[z] + ' \u00b7 ' + c; }
+  return c;
+}
 function closeTeam(fromPop){
   if($('#teamDlg').hidden) return;
   $('#teamDlg').hidden = true; document.body.style.overflow = '';
@@ -1138,7 +1169,7 @@ function renderGames(){
     const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
     html += '<tr><td class="mut l">' + dayToIso(day).slice(5) + '</td><td class="l hide-s">' + typePill(gi) + '</td>' +
       '<td class="t">' + badge(D.a[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.a[gi]], y).nick + '</span></td><td' + (hw ? ' class="mut"' : ' style="font-weight:700"') + '>' + D.ap[gi] + '</td>' +
-      '<td class="at">' + (D.neu[gi] ? 'vs' : '@') + '</td><td' + (hw ? ' style="font-weight:700"' : ' class="mut"') + '>' + D.hp[gi] + '</td>' +
+      '<td class="at">' + (D.neu[gi] ? 'vs' : '@') + '</td><td' + (hw ? ' style="font-weight:700"' : ' class="mut"') + '>' + D.hp[gi] + (HOT && D.ex[gi] ? ' <small class="mut">' + EXN[D.ex[gi]] + '</small>' : '') + '</td>' +
       '<td class="t">' + badge(D.h[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.h[gi]], y).nick + '</span></td>' +
       '<td class="mut">' + (p * 100).toFixed(0) + '%</td><td class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</td><td class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</td></tr>';
   });
@@ -1180,7 +1211,8 @@ function renderHistChart(){
   const Y = function(v){ return T + (1 - (v - mn) / (mx - mn)) * (H - T - B); };
   let s = '';
   for(let v = mn; v <= mx; v += 50) s += '<line class="gl" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>';
-  for(let yy = Math.ceil(y0 / 10) * 10; yy <= y1; yy += 10) s += '<text x="' + X(yy) + '" y="' + (H - 8) + '" text-anchor="middle">' + seasonLabel(yy).slice(0, 4).replace(/^(\d{3})(\d)$/, '$1$2') + '</text>';
+  const stp = (y1 - y0) > 40 ? 10 : 5;
+  for(let yy = Math.ceil(y0 / stp) * stp; yy <= y1; yy += stp) s += '<text x="' + X(yy) + '" y="' + (H - 8) + '" text-anchor="middle">' + seasonLabel(yy).slice(0, 4).replace(/^(\d{3})(\d)$/, '$1$2') + '</text>';
   s += '<line class="avg" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(1500) + '" y2="' + Y(1500) + '"/>';
   let seg = [];
   const flush = function(){ if(seg.length > 1) s += '<polyline class="ln" points="' + seg.join(' ') + '"/>'; seg = []; };
@@ -1307,14 +1339,14 @@ const FK = {}; F.forEach(function(f){ FK[f.k] = f.idx; });
 const CUR_IDX = F.filter(function(f){ return f.cur; }).map(function(f){ return f.idx; });
 const GROUPS = LEAGUE.groups.map(function(g, i){ return {id:g.id, label:g.label, slot:['E', 'W'][i], teams:g.teams || CUR_IDX.map(function(x){ return F[x].k; })}; });
 const GROUP_OF = {}; GROUPS.forEach(function(g){ g.teams.forEach(function(k){ GROUP_OF[k] = g; }); });
-const TYPE_LIST = ['R', 'C', 'F', 'I', 'P'], TYPE_SHOW = TYPE_LIST.filter(function(c){ return c !== 'I' || LEAGUE.playin; });
+const TYPE_LIST = ['R', 'C', 'F', 'I', 'P'], TYPE_SHOW = TYPE_LIST.filter(function(c){ return (c !== 'I' || LEAGUE.playin) && ((c !== 'C' && c !== 'F') || LEAGUE.cup !== false); });
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 let LG = loadLive(), liveGi = new Map(), liveStart = 0;
 let lShown = 300;
 
 function gkey(d, a, h){ return d + '|' + a + '|' + h; }
 function freshLive(){
-  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, src:'f', auto:has ? 1 : undefined}; });
+  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, ex:has && HOT ? (r[7] || 0) : 0, src:'f', auto:has ? 1 : undefined}; });
 }
 function loadLive(){
   try{
@@ -1335,7 +1367,7 @@ function computeLive(){
   const str = played.map(function(g){
     const t = TYPE_LIST.indexOf(g.type) >= 0 ? g.type : 'R';
     return isoToDay(g.date).toString(36).padStart(3, '0') + LETTERS[FK[g.away]] + LETTERS[FK[g.home]] +
-      g.aPts.toString(36).padStart(2, '0') + g.hPts.toString(36).padStart(2, '0') + (g.neu ? t.toLowerCase() : t);
+      (g.aPts + (HOT ? 50 * (g.ex || 0) : 0)).toString(36).padStart(2, '0') + g.hPts.toString(36).padStart(2, '0') + (g.neu ? t.toLowerCase() : t);
   }).join('');
   const g = {}; g[LIVE_Y] = str;
   const D1 = decodeHistory({fr:HIST_DATA.fr, g:g});
@@ -1344,7 +1376,7 @@ function computeLive(){
   liveStart = n0; liveGi = new Map();
   played.forEach(function(x, i){ liveGi.set(x.id, n0 + i); });
   D = {F:F, n:n0 + D1.n, day:cat(Int32Array, D0.day, D1.day), a:cat(Uint8Array, D0.a, D1.a), h:cat(Uint8Array, D0.h, D1.h),
-       ap:cat(Int16Array, D0.ap, D1.ap), hp:cat(Int16Array, D0.hp, D1.hp), ty:cat(Uint8Array, D0.ty, D1.ty), neu:cat(Uint8Array, D0.neu, D1.neu),
+       ap:cat(Int16Array, D0.ap, D1.ap), hp:cat(Int16Array, D0.hp, D1.hp), ty:cat(Uint8Array, D0.ty, D1.ty), neu:cat(Uint8Array, D0.neu, D1.neu), ex:cat(Uint8Array, D0.ex, D1.ex),
        season:cat(Int16Array, D0.season, D1.season),
        seasons:D0.seasons.concat(D1.seasons.map(function(s){ return {y:s.y, g0:s.g0 + n0, g1:s.g1 + n0}; }))};
   const shiftRec = function(x){ return x && x.y === LIVE_Y ? Object.assign({}, x, {gi:x.gi + n0}) : x; };
@@ -1362,11 +1394,33 @@ function liveProb(hK, aK, neu){
   const d = (st.mu[h] + (neu ? 0 : sn.hca / Q)) - st.mu[a];
   const e = 1 / (1 + Math.exp(-g(Math.sqrt(st.phi[h] * st.phi[h] + st.phi[a] * st.phi[a])) * d));
   if(!S.useMov) return e;
-  const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd;
+  const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd * (LEAGUE.kShrink || 1);
   return normCdf(normInv(e) * kk);
 }
 // expected margin (home minus away) from a home win probability: the margin spread of the season turns a win chance into points
 function spreadOf(p){ const sn = R.seasons[R.seasons.length - 1]; return sn.sd * normInv(Math.min(0.999, Math.max(0.001, p))); }
+// hockey: share of regular-season games that go past regulation, and share of those decided in a shootout, from the last seasons that carry the flag
+const OTM = {o:LEAGUE.otShare || 0.235, so:LEAGUE.soShare || 0.4, mg:[0, 0.42, 0.72, 0.88, 0.95, 0.98, 0.995, 1]};
+function fitOT(){
+  if(!HOT) return;
+  let n = 0, ot = 0, so = 0; const mc = new Array(8).fill(0); let mn = 0;
+  for(let k = D0.seasons.length - 1, used = 0; k >= 0 && used < 4; k--){
+    const sn = D0.seasons[k]; let has = false, c = 0, o = 0, q = 0;
+    const m2 = new Array(8).fill(0); let mm = 0;
+    for(let gi = sn.g0; gi < sn.g1; gi++){
+      if(D0.ty[gi] > 1) continue;
+      c++; if(D0.ex[gi] > 0){ has = true; o++; if(D0.ex[gi] === 2) q++; }
+      else { const m = Math.abs(D0.hp[gi] - D0.ap[gi]); m2[Math.min(7, m)]++; mm++; }
+    }
+    if(!has) continue;
+    used++; n += c; ot += o; so += q; for(let i = 0; i < 8; i++) mc[i] += m2[i]; mn += mm;
+  }
+  if(n > 500){
+    OTM.o = ot / n; OTM.so = ot ? so / ot : OTM.so;
+    let cum = 0; OTM.mg = mc.map(function(v, i){ cum += v / mn; return i === 7 ? 1 : cum; });
+  }
+}
+function ptsExp(p){ const q = 0.5 + 0.5 * (p - 0.5); return [2 * p + OTM.o * (1 - q), 2 * (1 - p) + OTM.o * q]; }
 function afterLiveChange(full){
   const oldLen = cur().days.length, wasEnd = pos >= oldLen, wasLive = cur().y === LIVE_Y;
   saveLive(); computeLive(); deriveChamps();
@@ -1390,6 +1444,7 @@ function fillLiveFilters(pickMonth){
   if(keep && ms.indexOf(keep) >= 0) sel.value = keep;
   else { const open = LG.filter(function(g){ return !isPlayed(g); })[0]; sel.value = open ? open.date.slice(0, 7) : ms[ms.length - 1]; }
 }
+function exSel(v){ return '<select class="exs" aria-label="Decided in" title="Decided in regulation, overtime or a shootout">' + ['Reg', 'OT', 'SO'].map(function(t, i){ return '<option value="' + i + '"' + (i === v ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>'; }
 function typeSelect(t){ return '<select class="ty" data-f="type">' + TYPE_SHOW.map(function(c){ return '<option value="' + c + '"' + (c === t ? ' selected' : '') + '>' + TYPE_NAMES[c] + '</option>'; }).join('') + '</select>'; }
 function liveFiltered(){
   const team = $('#gTeam').value, type = $('#gType').value, m = $('#gMonth').value, st = $('#gStatus').value;
@@ -1407,7 +1462,7 @@ function liveCellsFor(g){
   const gi = liveGi.get(g.id), done = gi !== undefined;
   const p = done ? R.pH[gi] : liveProb(g.home, g.away, g.neu);
   const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
-  return {pred:g.home + ' ' + Math.round(p * 100) + '% \u00b7 ' + sgn(-Math.round(spreadOf(p) * 2) / 2, 1), w:Math.round(p * 100), done:done,
+  return {pred:g.home + ' ' + Math.round(p * 100) + '% \u00b7 ' + spr(p), w:Math.round(p * 100), done:done,
     dl:done ? '<span class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</span> / <span class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</span>' : ''};
 }
 function renderLiveGames(){
@@ -1420,7 +1475,7 @@ function renderLiveGames(){
     html += '<tr data-id="' + g.id + '"><td class="mut l hide-s">' + g.date.slice(5) + '</td><td class="l hide-s">' + typeSelect(g.type) + '</td>' +
       '<td class="t">' + badge(FK[g.away], y) + '<span class="nick hide-s">' + eraOf(F[FK[g.away]], y).nick + '</span></td>' +
       '<td><input class="sc" type="number" min="0" max="250" data-side="a" value="' + av + '" aria-label="Away points"></td><td class="at">' + (g.neu ? 'vs' : '@') + '</td>' +
-      '<td><input class="sc" type="number" min="0" max="250" data-side="h" value="' + hv + '" aria-label="Home points"></td>' +
+      '<td><input class="sc" type="number" min="0" max="250" data-side="h" value="' + hv + '" aria-label="Home points">' + (HOT ? exSel(g.ex || 0) : '') + '</td>' +
       '<td class="t">' + badge(FK[g.home], y) + '<span class="nick hide-s">' + eraOf(F[FK[g.home]], y).nick + '</span></td>' +
       '<td class="pred' + (c.done ? ' done' : '') + '" style="--w:' + c.w + '%">' + c.pred + '</td><td class="dl hide-s">' + c.dl + '</td>' +
       '<td class="hide-s"><button class="x" data-act="clr" title="Clear result">Clear</button><button class="x" data-act="del" title="Remove game">✕</button></td></tr>';
@@ -1441,6 +1496,7 @@ function onLiveInput(e){
   const el = e.target, tr = el.closest('tr'); if(!tr) return;
   const g = liveById(tr.getAttribute('data-id')); if(!g) return;
   if(el.classList.contains('ty')){ g.type = el.value; g.typeEdited = 1; afterLiveChange(false); return; }
+  if(el.classList.contains('exs')){ g.ex = +el.value; delete g.auto; afterLiveChange(false); return; }
   if(!el.classList.contains('sc')) return;
   const ai = tr.querySelector('input[data-side=a]'), hi = tr.querySelector('input[data-side=h]');
   const a = ptsOf(ai.value), h = ptsOf(hi.value);
@@ -1461,7 +1517,7 @@ function ptsOf(v){ return /^\d{1,3}$/.test(String(v == null ? '' : v).trim()) ? 
 function setMsg(sel, text, bad){ const el = $(sel); el.textContent = text; el.className = 'msg ' + (bad ? 'down' : 'up'); }
 function addGame(){
   const date = $('#aDate').value, away = $('#aAway').value, home = $('#aHome').value, type = $('#aType').value, neu = $('#aNeu').checked ? 1 : 0;
-  const ap = $('#aAP').value.trim(), hp = $('#aHP').value.trim();
+  const ap = $('#aAP').value.trim(), hp = $('#aHP').value.trim(), xo = HOT ? +$('#aEx').value : 0;
   if(!date) return setMsg('#addMsg', 'Pick a date.', true);
   if(away === home) return setMsg('#addMsg', 'Away and home must be different teams.', true);
   let a = null, h = null;
@@ -1471,8 +1527,8 @@ function addGame(){
     if(a === h) return setMsg('#addMsg', LEAGUE.name + ' games cannot end tied; check the scores.', true);
   }
   const k = gkey(date, away, home), ex = liveById(k);
-  if(ex){ if(a != null){ ex.aPts = a; ex.hPts = h; } ex.type = type; if(neu) ex.neu = 1; }
-  else { LG.push({id:k, date:date, away:away, home:home, type:type, neu:neu, aPts:a, hPts:h, manual:true}); sortLive(); }
+  if(ex){ if(a != null){ ex.aPts = a; ex.hPts = h; if(HOT) ex.ex = xo; } ex.type = type; if(neu) ex.neu = 1; }
+  else { LG.push({id:k, date:date, away:away, home:home, type:type, neu:neu, aPts:a, hPts:h, ex:xo, manual:true}); sortLive(); }
   fillLiveFilters(date.slice(0, 7)); afterLiveChange(true);
   setMsg('#addMsg', (ex ? 'Updated ' : 'Added ') + away + ' @ ' + home + ' on ' + date + ' (' + TYPE_NAMES[type] + ').');
   $('#aAP').value = ''; $('#aHP').value = '';
@@ -1531,8 +1587,9 @@ function parseSchedule(text){
     const awayIdx = n.findIndex(function(x){ return x.indexOf('visitor') === 0 || x === 'away' || x === 'awayteam'; });
     const homeIdx = n.findIndex(function(x){ return x.indexOf('home') === 0 && x.indexOf('pts') < 0; });
     if(n.indexOf('date') >= 0 && awayIdx >= 0 && homeIdx >= 0){
-      const ptsIdx = []; n.forEach(function(x, i){ if(x === 'pts') ptsIdx.push(i); });
-      cols = {date:n.indexOf('date'), away:awayIdx, home:homeIdx,
+      const ptsIdx = []; n.forEach(function(x, i){ if(x === 'pts' || (HOT && x === 'g')) ptsIdx.push(i); });
+      let otIdx = n.indexOf('ot'); if(otIdx < 0 && HOT && ptsIdx[1] != null && (n[ptsIdx[1] + 1] === '' || n[ptsIdx[1] + 1] === 'so')) otIdx = ptsIdx[1] + 1;
+      cols = {date:n.indexOf('date'), away:awayIdx, home:homeIdx, ot:otIdx,
         aP:n.indexOf('awaypts') >= 0 ? n.indexOf('awaypts') : (ptsIdx[0] != null ? ptsIdx[0] : -1),
         hP:n.indexOf('homepts') >= 0 ? n.indexOf('homepts') : (ptsIdx[1] != null ? ptsIdx[1] : -1),
         ty:n.indexOf('type') >= 0 ? n.indexOf('type') : n.indexOf('notes')};
@@ -1552,7 +1609,8 @@ function parseSchedule(text){
     if(away === home){ if(errors.length < 5) errors.push('Line ' + (idx + 1) + ': same team on both sides.'); return; }
     let aPts = cc.aP >= 0 ? ptsOf(c[cc.aP]) : null, hPts = cc.hP >= 0 ? ptsOf(c[cc.hP]) : null;
     if(aPts == null || hPts == null){ aPts = null; hPts = null; }
-    rows.push({date:date, away:away, home:home, aPts:aPts, hPts:hPts, type:cc.ty >= 0 ? typeFromText(c[cc.ty]) : null});
+    const ot = String(cc.ot >= 0 && c[cc.ot] ? c[cc.ot] : '').toLowerCase(), exv = /so/.test(ot) ? 2 : (/ot/.test(ot) ? 1 : 0);
+    rows.push({date:date, away:away, home:home, aPts:aPts, hPts:hPts, ex:exv, type:cc.ty >= 0 ? typeFromText(c[cc.ty]) : null});
   });
   return {rows:rows, errors:errors};
 }
@@ -1565,12 +1623,12 @@ function mergeRows(rows, deflt){
     const type = r.type || (deflt !== 'auto' ? deflt : (r.date > rsEnd ? 'P' : 'R'));
     if(ex){
       let ch = false;
-      if(r.aPts != null && (ex.aPts !== r.aPts || ex.hPts !== r.hPts)){ ex.aPts = r.aPts; ex.hPts = r.hPts; ch = true; }
+      if(r.aPts != null && (ex.aPts !== r.aPts || ex.hPts !== r.hPts || (HOT && (ex.ex || 0) !== (r.ex || 0)))){ ex.aPts = r.aPts; ex.hPts = r.hPts; if(HOT) ex.ex = r.ex || 0; ch = true; }
       if(r.type && ex.type !== r.type){ ex.type = r.type; ch = true; }
       if(r.neu && !ex.neu){ ex.neu = 1; ch = true; }
       if(ch) updated++;
     } else {
-      const ng = {id:k, date:r.date, away:r.away, home:r.home, type:type, neu:r.neu ? 1 : 0, aPts:r.aPts, hPts:r.hPts, manual:true};
+      const ng = {id:k, date:r.date, away:r.away, home:r.home, type:type, neu:r.neu ? 1 : 0, aPts:r.aPts, hPts:r.hPts, ex:r.ex || 0, manual:true};
       LG.push(ng); idx.set(k, ng); added++;
     }
   });
@@ -1607,8 +1665,8 @@ function mergeFile(file){
     if(!g){ g = {id:id, date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:null, hPts:null, src:'f'}; LG.push(g); idx.set(id, g); added++; }
     else { if(!g.typeEdited) g.type = r[3]; if(r[4]) g.neu = 1; if(!g.src && !g.manual) g.src = 'f'; }
     if(r[5] != null && r[6] != null && r[5] !== r[6] && (g.aPts == null || g.auto)){
-      if(g.aPts !== r[5] || g.hPts !== r[6]) filled++;
-      g.aPts = r[5]; g.hPts = r[6]; g.auto = 1;
+      if(g.aPts !== r[5] || g.hPts !== r[6] || (HOT && (g.ex || 0) !== (r[7] || 0))) filled++;
+      g.aPts = r[5]; g.hPts = r[6]; g.auto = 1; if(HOT) g.ex = r[7] || 0;
     }
   });
   if(rows.length >= 1000){
@@ -1641,8 +1699,8 @@ async function syncSeason(manual){
   }
 }
 function exportCsv(){
-  const lines = ['date,away,home,awayPts,homePts,type'].concat(LG.map(function(x){
-    return [x.date, x.away, x.home, x.aPts == null ? '' : x.aPts, x.hPts == null ? '' : x.hPts, x.type].join(',');
+  const lines = ['date,away,home,awayPts,homePts,type' + (HOT ? ',ot' : '')].concat(LG.map(function(x){
+    return [x.date, x.away, x.home, x.aPts == null ? '' : x.aPts, x.hPts == null ? '' : x.hPts, x.type].concat(HOT ? [EXN[x.ex || 0]] : []).join(',');
   }));
   const blob = new Blob([lines.join('\n') + '\n'], {type:'text/csv'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = LEAGUE.csvName;
@@ -1677,20 +1735,28 @@ function createSimulation(opts){
   const nn = n * n, grp = new Int8Array(n).fill(-1), div = new Int8Array(n).fill(-1);
   GROUPS.forEach(function(g, z){ g.teams.forEach(function(k){ if(idx[k] !== undefined) grp[idx[k]] = z; }); });
   (LEAGUE.divisions || []).forEach(function(d, z){ d.forEach(function(k){ if(idx[k] !== undefined) div[idx[k]] = z; }); });
-  const mkT = function(){ return {hw:new Int16Array(nn), gm:new Int16Array(nn), pd:new Float64Array(nn), tp:new Float64Array(n), cw:new Int16Array(n), cg:new Int16Array(n)}; };
+  const mkT = function(){ return {hw:new Int16Array(nn), gm:new Int16Array(nn), pd:new Float64Array(nn), tp:new Float64Array(n), cw:new Int16Array(n), cg:new Int16Array(n),
+    pt:new Int16Array(n), rw:new Int16Array(n), ro:new Int16Array(n), hp:new Int16Array(nn)}; };
   const B = mkT(), SX = mkT();
-  function rec(o, h, a, hwin, m){
+  const copyT = function(d, q){ d.hw.set(q.hw); d.gm.set(q.gm); d.pd.set(q.pd); d.tp.set(q.tp); d.cw.set(q.cw); d.cg.set(q.cg); d.pt.set(q.pt); d.rw.set(q.rw); d.ro.set(q.ro); d.hp.set(q.hp); };
+  function rec(o, h, a, hwin, m, xx){
     const wI = hwin ? h : a, lI = hwin ? a : h;
     o.hw[wI * n + lI]++; o.gm[h * n + a]++; o.gm[a * n + h]++;
     o.pd[wI * n + lI] += m; o.pd[lI * n + wI] -= m; o.tp[wI] += m; o.tp[lI] -= m;
     if(grp[h] === grp[a]){ o.cg[h]++; o.cg[a]++; o.cw[wI]++; }
+    if(PTS){   // hockey: 2 points for a win, 1 for an overtime or shootout loss; regulation wins (RW) and wins excluding shootouts (ROW) break ties
+      const e = xx | 0; o.pt[wI] += 2; o.hp[wI * n + lI] += 2;
+      if(e > 0){ o.pt[lI]++; o.hp[lI * n + wI]++; }
+      if(e === 0) o.rw[wI]++;
+      if(e < 2) o.ro[wI]++;
+    }
   }
   let played = 0;
   LG.forEach(function(x){
     if(!inStandings(x)) return;
     const h = idx[x.home], a = idx[x.away]; if(h === undefined || a === undefined) return;
     gp[h]++; gp[a]++; homeCnt[h]++;
-    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; rec(B, h, a, x.hPts > x.aPts, Math.abs(x.hPts - x.aPts)); }
+    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; rec(B, h, a, x.hPts > x.aPts, Math.abs(x.hPts - x.aPts), x.ex); }
     else rem.push(h, a, x.neu ? 1 : 0);
   });
   const need = new Int32Array(n); let missingSlots = 0, totalNeed = 0;
@@ -1706,12 +1772,21 @@ function createSimulation(opts){
   const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
   const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
   const GI = GROUPS.map(function(g){ return g.teams.map(function(k){ return idx[k]; }).filter(function(i){ return i !== undefined; }); });
-  const pos = new Int32Array(n * SL), sumW = new Float64Array(n);
+  const pos = new Int32Array(n * SL), sumW = new Float64Array(n), dwn = new Float64Array(n);
   const sim = {rsDone:rsDone, done:0, played:played, scheduled:rem.length / 3, missing:Math.floor(missingSlots / 2), generated:Math.floor(totalNeed / 2)};
+  function sampleMargin(){ const u = rnd(), mg = OTM.mg; for(let i = 1; i < 7; i++) if(u <= mg[i]) return i; return 7 + ((rnd() * 2) | 0); }
   function play(h, a, neu){
     let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
     if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
     const i = x | 0, p = TAB[i] + (TAB[i + 1] - TAB[i]) * (x - i);
+    if(PTS){   // some games go past regulation: the winner is then closer to a coin flip and the margin is one goal
+      const q = 0.5 + 0.5 * (p - 0.5), o = OTM.o;
+      let hw2, xx = 0, m;
+      if(rnd() < o){ xx = rnd() < OTM.so ? 2 : 1; hw2 = rnd() < q; m = 1; }
+      else { hw2 = rnd() < Math.min(0.99, Math.max(0.01, (p - o * q) / (1 - o))); m = sampleMargin(); }
+      if(hw2) w[h]++; else w[a]++;
+      rec(SX, h, a, hw2, m, xx); return;
+    }
     const hwin = rnd() < p; if(hwin) w[h]++; else w[a]++;
     rec(SX, h, a, hwin, Math.round(Math.abs(randn()) * sn.sd) + 1);
   }
@@ -1720,10 +1795,13 @@ function createSimulation(opts){
   function orderBucket(b, det){
     const m = b.length, sc = [];
     b.forEach(function(t){
-      let hwS = 0, gmS = 0, pdS = 0;
-      b.forEach(function(j){ if(j !== t){ hwS += SX.hw[t * n + j]; gmS += SX.gm[t * n + j]; pdS += SX.pd[t * n + j]; } });
+      let hwS = 0, gmS = 0, pdS = 0, hpS = 0;
+      b.forEach(function(j){ if(j !== t){ hwS += SX.hw[t * n + j]; gmS += SX.gm[t * n + j]; pdS += SX.pd[t * n + j]; hpS += SX.hp[t * n + j]; } });
       const h2h = gmS ? hwS / gmS : 0.5, v = [];
-      if(LEAGUE.tiebreak === 'nba'){
+      if(LEAGUE.tiebreak === 'nhl'){
+        // official order after points: regulation wins, wins excluding shootouts, total wins, points in games among the tied clubs, goal differential
+        v.push(SX.rw[t], SX.ro[t], w[t], gmS ? hpS / (2 * gmS) : 0.5, SX.tp[t]);
+      } else if(LEAGUE.tiebreak === 'nba'){
         const same = m === 2 && div[b[0]] >= 0 && div[b[0]] === div[b[1]];
         const dv = m === 2 ? (same ? dw[t] : 0) : dw[t], cf = SX.cg[t] ? SX.cw[t] / SX.cg[t] : 0.5;
         if(m === 2) v.push(h2h, dv, cf, SX.tp[t]); else v.push(dv, h2h, cf, SX.tp[t]);
@@ -1742,7 +1820,7 @@ function createSimulation(opts){
     return sc.map(function(x){ return x.t; });
   }
   function assignKeys(det){
-    for(let i = 0; i < n; i++){ pc[i] = gms[i] > 0 ? w[i] / gms[i] : 0.5; key[i] = pc[i]; }
+    for(let i = 0; i < n; i++){ pc[i] = gms[i] > 0 ? (PTS ? SX.pt[i] / (2 * gms[i]) : w[i] / gms[i]) : 0.5; key[i] = pc[i]; }
     if(DIVN){
       dw.fill(0);
       for(let z = 0; z < DIVN; z++){
@@ -1799,7 +1877,7 @@ function createSimulation(opts){
   known.forEach(function(s){ s.sched.sort(function(p, q){ return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }); });
   let fixedBracket = null;
   if(serList.length){
-    w.set(base); gms.set(gp); SX.hw.set(B.hw); SX.gm.set(B.gm); SX.pd.set(B.pd); SX.tp.set(B.tp); SX.cw.set(B.cw); SX.cg.set(B.cg);
+    w.set(base); gms.set(gp); copyT(SX, B);
     assignKeys(true); const pk = key.slice();
     const pct = function(i){ return pk[i]; };
     const first = new Map();
@@ -1807,6 +1885,18 @@ function createSimulation(opts){
     fixedBracket = GI.map(function(g){
       const r1 = serList.filter(function(s){ return g.indexOf(s.x) >= 0 && first.get(s.x) === s && first.get(s.y) === s; });
       const rank = g.slice().sort(function(p, q){ return pct(q) - pct(p); }), sd = function(t){ return rank.indexOf(t); };
+      if(LEAGUE.qual === 'nhl'){
+        // round 1 as played: [division winner v wild card, 2nd v 3rd of the same division] for each division
+        const dws = LEAGUE.divOfGroup[GI.indexOf(g)].map(function(z){ return g.filter(function(t){ return div[t] === z; }).sort(function(p, q){ return pct(q) - pct(p); })[0]; });
+        const hiLo = function(s){ const hi2 = pct(s.x) >= pct(s.y) ? s.x : s.y; return [hi2, hi2 === s.x ? s.y : s.x]; };
+        const wcs = r1.filter(function(s){ return dws.indexOf(s.x) >= 0 || dws.indexOf(s.y) >= 0; }), intra = r1.filter(function(s){ return dws.indexOf(s.x) < 0 && dws.indexOf(s.y) < 0; });
+        const res = [];
+        dws.forEach(function(dw, k){
+          const z = LEAGUE.divOfGroup[GI.indexOf(g)][k], a = wcs.filter(function(s){ return s.x === dw || s.y === dw; })[0], b = intra.filter(function(s){ return div[s.x] === z; })[0];
+          if(a && b){ const A = hiLo(a), Bb = hiLo(b); res.push(dw, A[0] === dw ? A[1] : A[0], Bb[0], Bb[1]); }
+        });
+        if(res.length === 8) return res;
+      }
       r1.sort(function(p, q){ return Math.min(sd(p.x), sd(p.y)) - Math.min(sd(q.x), sd(q.y)); });
       const ord = r1.length === 4 ? [0, 3, 2, 1] : r1.map(function(z, i){ return i; }), out = new Array(r1.length * 2);
       r1.forEach(function(s, i){ const hi2 = sd(s.x) < sd(s.y) ? s.x : s.y, lo2 = hi2 === s.x ? s.y : s.x; out[2 * ord[i]] = hi2; out[2 * ord[i] + 1] = lo2; });
@@ -1835,7 +1925,15 @@ function createSimulation(opts){
     }
     return wa >= need ? a : b;
   }
+  function bracketNHL(gi){
+    // three teams per division plus two conference-wide wild cards; the better division winner meets the lower wild card
+    const byKey = function(arr){ return arr.slice().sort(function(p, q){ return key[q] - key[p]; }); };
+    const dv = LEAGUE.divOfGroup[gi].map(function(z){ return byKey(GI[gi].filter(function(t){ return div[t] === z; })); });
+    const rest = byKey(dv[0].slice(3).concat(dv[1].slice(3))), a1 = dv[0][0], b1 = dv[1][0], aBetter = key[a1] >= key[b1];
+    return [a1, aBetter ? rest[1] : rest[0], dv[0][1], dv[0][2], b1, aBetter ? rest[0] : rest[1], dv[1][1], dv[1][2]];
+  }
   function bracketFromSeeds(gi){
+    if(LEAGUE.qual === 'nhl') return bracketNHL(gi);
     const g = GI[gi].slice().sort(function(p, q){ return key[q] - key[p]; });
     let s7 = g[6], s8 = g[7];
     if(PO.playIn){
@@ -1864,15 +1962,16 @@ function createSimulation(opts){
     for(let s = 0; s < count; s++){
       for(let i = 0; i < n; i++) str[i] = mu[i] + (opts.uncertainty ? phi[i] * randn() : 0);
       w.set(base); gms.set(gp);
-      SX.hw.set(B.hw); SX.gm.set(B.gm); SX.pd.set(B.pd); SX.tp.set(B.tp); SX.cw.set(B.cw); SX.cg.set(B.cg);
+      copyT(SX, B);
       if(rsDone){
-        assignKeys(true); for(let i = 0; i < n; i++) sumW[i] += w[i];
+        assignKeys(true); for(let i = 0; i < n; i++) sumW[i] += PTS ? SX.pt[i] : w[i];
       } else {
         for(let k = 0; k < rem.length; k += 3) play(rem[k], rem[k + 1], rem[k + 2]);
         if(totalNeed > 1) playFill();
-        assignKeys(false); for(let i = 0; i < n; i++) sumW[i] += w[i];
+        assignKeys(false); for(let i = 0; i < n; i++) sumW[i] += PTS ? SX.pt[i] : w[i];
         GI.forEach(rankConf);
       }
+      if(DIVN) for(let z = 0; z < DIVN; z++){ let best = -1; for(let i = 0; i < n; i++) if(div[i] === z && (best < 0 || key[i] > key[best])) best = i; if(best >= 0) dwn[best]++; }
       runPlayoffs(); sim.done++;
     }
   };
@@ -1883,7 +1982,7 @@ function createSimulation(opts){
       for(let q = 0; q < SL; q++){ const f = pos[i * SL + q] / d; p.push(f); LEAGUE.tops.forEach(function(c, z){ if(q < c) tp[z] += f; }); }
       let gi = 0; GI.forEach(function(g, z){ if(g.indexOf(i) >= 0) gi = z; });
       const rc = []; for(let r = 0; r <= NR; r++) rc.push(reach[i * (NR + 1) + r] / d);
-      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp, reach:rc};
+      return {f:FK[k], conf:GROUPS[gi].id, avgW:sumW[i] / d, pos:p, tops:tp, reach:rc, divw:dwn[i] / d};
     });
   };
   return sim;
@@ -1947,14 +2046,16 @@ function renderSim(res, n){
   GROUPS.forEach(function(gr){
     const sl = gr.slot;
     const rows = res.filter(function(r){ return r.conf === gr.id; }).sort(function(a, b){ return b.avgW - a.avgW; });
-    let h = '<thead><tr><th class="l">Team</th><th>Avg W</th>';
+    let h = '<thead><tr><th class="l">Team</th><th>' + (PTS ? 'Avg pts' : 'Avg W') + '</th>';
     for(let k = 1; k <= gr.teams.length; k++) h += '<th class="pos ' + zoneOf(k) + '">' + k + '</th>';
     LEAGUE.tops.forEach(function(c){ h += '<th>Top ' + c + '</th>'; });
+    if(PTS) h += '<th title="Wins the division (most points; tiebreakers apply)">Div.</th><th title="Makes the playoffs: top three in the division or one of the two conference wild cards">Playoffs</th>';
     h += '</tr></thead><tbody>';
     rows.forEach(function(r){
-      h += '<tr><td class="l">' + badge(r.f, LIVE_Y) + eraOf(F[r.f], LIVE_Y).nick + '</td><td>' + r.avgW.toFixed(1) + '</td>';
+      h += '<tr><td class="l">' + badge(r.f, LIVE_Y) + eraOf(F[r.f], LIVE_Y).nick + '</td><td>' + r.avgW.toFixed(PTS ? 1 : 1) + '</td>';
       r.pos.slice(0, gr.teams.length).forEach(function(f, k){ h += pctCell(f, tname(r.f, LIVE_Y) + ' finishes ' + ordinal(k + 1) + ' in ' + (f * 100).toFixed(1) + '% of seasons'); });
       r.tops.forEach(function(v){ h += '<td class="sum">' + (v * 100).toFixed(1) + '</td>'; });
+      if(PTS) h += '<td class="sum">' + (r.divw * 100).toFixed(1) + '</td><td class="sum">' + (r.reach[0] * 100).toFixed(1) + '</td>';
       h += '</tr>';
     });
     $('#simTbl' + sl).innerHTML = h + '</tbody>';
@@ -1990,6 +2091,15 @@ function wireLive(){
   $('#aDate').value = open ? open.date : LEAGUE.defaultDate;
   fillLiveFilters(); updateLiveStatus(); updateSimBtn();
   if(!LEAGUE.playin) $$('[data-playin]').forEach(function(e){ e.remove(); });
+  if(LEAGUE.cup === false) $$('[data-cup]').forEach(function(e){ e.remove(); });
+  if(!HOT) $$('[data-ot]').forEach(function(e){ e.remove(); });
+  if(PTS){
+    $('#projTbl thead tr').innerHTML = '<th class="rk">#</th><th class="l">Team</th><th title="Current rating">Rating</th>' +
+      '<th title="Wins-losses-overtime losses so far">W-L-OTL</th><th title="Points so far (2 for a win, 1 for an overtime or shootout loss)">Pts</th>' +
+      '<th title="Expected points in the games still to play, using today\'s ratings">Rest</th><th title="Expected final points: points so far + expected rest of season">Final</th>' +
+      '<th title="Remaining strength of schedule: average rating of the opponents still to play, adjusted for home ice">SOS</th>';
+    if(LEAGUE.divisions && LEAGUE.divNames) $('#projView').insertAdjacentHTML('beforeend', '<option value="div">Division</option>');
+  }
   $$('.legend').forEach(function(el){
     let from = 1; el.innerHTML = LEAGUE.zones.map(function(z){ const s = '<span class="' + z.cls + '"><i></i>' + from + '\u2013' + z.to + ' ' + z.label + '</span>'; from = z.to + 1; return s; }).join('');
   });
