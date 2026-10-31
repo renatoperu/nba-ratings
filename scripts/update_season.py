@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh data/season.json (NBA) or data/wnba-season.json (WNBA) with the current season's schedule and results.
+"""Refresh data/season.json (NBA), wnba-season.json, nhl-season.json or mlb-season.json with the current season's schedule and results.
 
 Source: the ESPN schedule table published by sportsdataverse/hoopR-nba-data on GitHub
 (nba_schedule_<YYYY>.parquet, where YYYY is the year the season ends, e.g. 2027 for 2026-27).
@@ -39,7 +39,16 @@ LEAGUES = {
         # ESPN abbreviations that differ from the data repository's
         abbr={"LA": "LAK", "NJ": "NJD", "SJ": "SJS", "TB": "TBL", "UTAH": "UTA", "ARI": "UTA", "PHX": "UTA", "VEG": "VGK"},
         fr=set("ANA BOS BUF CAR CBJ CGY CHI COL DAL DET EDM FLA LAK MIN MTL NJD NSH NYI NYR OTT PHI PIT SEA SJS STL TBL TOR UTA VAN VGK WPG WSH".split())),
+    "mlb": dict(
+        year=int(os.environ.get("MLB_SEASON_YEAR", "2027")),    # MLB seasons sit inside one calendar year
+        api="https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate={y}-02-01&endDate={y}-11-30&gameType=R,F,D,L,W",
+        out=os.path.join(DATA, "mlb-season.json"), src="MLB Stats API", sport=None,
+        abbr={}, fr=set("ARI ATH ATL BAL BOS CHC CIN CLE COL CWS DET HOU KCR LAA LAD MIA MIL MIN NYM NYY PHI PIT SDP SEA SFG STL TBR TEX TOR WSN".split())),
 }
+# MLB Stats API team ids -> the app's franchise keys
+MLB_IDS = {108: "LAA", 109: "ARI", 110: "BAL", 111: "BOS", 112: "CHC", 113: "CIN", 114: "CLE", 115: "COL", 116: "DET", 117: "HOU", 118: "KCR", 119: "LAD",
+           120: "WSN", 121: "NYM", 133: "ATH", 134: "PIT", 135: "SDP", 136: "SEA", 137: "SFG", 138: "STL", 139: "TBR", 140: "TEX", 141: "TOR", 142: "MIN",
+           143: "PHI", 144: "ATL", 145: "CWS", 146: "MIA", 147: "NYY", 158: "MIL"}
 UNKNOWN = set()    # team abbreviations ESPN sent that we could not map (reported in the log)
 L = LEAGUES["nba"]
 
@@ -135,6 +144,59 @@ def convert_nhl(df, ot_ids, have_goals, old_ex):
         rows.append([key[0], a, b, game_type(2 if r.game_type == "R" else 3, ""), 0, ap, hp, ex])
     rows.sort(key=lambda x: (x[0], x[1], x[2]))
     return rows
+
+
+def mlb_done(state, detailed, a, b):
+    return state == "Final" and detailed in ("Final", "Completed Early", "Game Over") and a is not None and b is not None and int(a) != int(b)
+
+
+def convert_mlb(payload):
+    """MLB Stats API schedule JSON -> rows [date, away, home, type, 0, awayRuns|None, homeRuns|None].
+    Doubleheaders keep their order (by game number, then gamePk) because the app numbers repeated pairings in file order."""
+    items = []
+    for d in payload.get("dates", []):
+        for g in d.get("games", []):
+            st = g.get("status") or {}
+            detailed = st.get("detailedState", "")
+            if detailed in ("Postponed", "Cancelled", "Suspended") or g.get("gameType") not in ("R", "F", "D", "L", "W"):
+                continue
+            tm = g["teams"]
+            a, b = MLB_IDS.get((tm["away"]["team"] or {}).get("id")), MLB_IDS.get((tm["home"]["team"] or {}).get("id"))
+            if a is None or b is None:
+                UNKNOWN.add(str((tm["away"]["team"] or {}).get("id")) + "/" + str((tm["home"]["team"] or {}).get("id")))
+                continue
+            done = mlb_done(st.get("abstractGameState"), detailed, tm["away"].get("score"), tm["home"].get("score"))
+            items.append((g.get("officialDate") or d["date"], g.get("gameNumber", 1), g.get("gamePk", 0),
+                          [g.get("officialDate") or d["date"], a, b, "R" if g["gameType"] == "R" else "P", 0,
+                           int(tm["away"]["score"]) if done else None, int(tm["home"]["score"]) if done else None]))
+    items.sort(key=lambda x: (x[0], x[1], x[2]))
+    return [x[3] for x in items]
+
+
+def convert_mlb_table(df):
+    """baseballr schedule table (parquet) -> the same rows."""
+    df = df[df.game_type.isin(["R", "F", "D", "L", "W"]) & ~df.detailed_state.isin(["Postponed", "Cancelled", "Suspended"])].drop_duplicates("game_pk")
+    items = []
+    for r in df.sort_values(["game_date", "game_pk"]).itertuples():
+        a, b = MLB_IDS.get(int(r.away_team_id)), MLB_IDS.get(int(r.home_team_id))
+        if a is None or b is None:
+            continue
+        done = mlb_done("Final" if r.detailed_state in ("Final", "Completed Early") else "", r.detailed_state, getattr(r, "away_score", None) if pd.notna(getattr(r, "away_score", None)) else None,
+                        getattr(r, "home_score", None) if pd.notna(getattr(r, "home_score", None)) else None)
+        items.append([str(r.game_date)[:10], a, b, "R" if r.game_type == "R" else "P", 0, int(r.away_score) if done else None, int(r.home_score) if done else None])
+    return items
+
+
+def load_mlb(source, year):
+    if source and source.endswith(".json"):
+        with open(source) as f:
+            return convert_mlb(json.load(f))
+    if source:
+        return convert_mlb_table(pd.read_parquet(source))
+    import requests
+    r = requests.get(L["api"].format(y=year), timeout=120, headers={"User-Agent": "Mozilla/5.0 (compatible; ratings-app)"})
+    r.raise_for_status()
+    return convert_mlb(r.json())
 
 
 def espn_type(season_type, headline):
@@ -253,8 +315,13 @@ def main():
     args.out = args.out or L["out"]
     args.year = args.year or L["year"]
     try:
-        df = load(args.source, args.year)
-        if args.league == "nhl":
+        df = None if args.league == "mlb" else load(args.source, args.year)
+        if args.league == "mlb":
+            games = load_mlb(args.source, args.year)
+            if UNKNOWN:
+                print("WARNING: unmapped MLB team ids: " + ", ".join(sorted(UNKNOWN)))
+            args.no_espn = True
+        elif args.league == "nhl":
             old_ex = {}
             try:
                 with open(args.out) as f:
@@ -294,7 +361,7 @@ def main():
         print("No changes (%d games, %d with results)." % (len(games), sum(1 for g in games if g[5] is not None)))
         return 0
     out = {"season": args.year, "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-           "source": "sportsdataverse/" + L["src"] + " + ESPN scoreboard", "games": games}
+           "source": (L["src"] if args.league == "mlb" else "sportsdataverse/" + L["src"] + " + ESPN scoreboard"), "games": games}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(out, f, separators=(",", ":"))

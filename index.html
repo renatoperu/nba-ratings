@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<script>try{var id='nba',l=localStorage.getItem('lastLeague'),P={nba:'index.html',wnba:'wnba.html',nhl:'nhl.html'};if(!/[?&]lg=/.test(location.search)&&l&&l!==id&&P[l]){location.replace(P[l])}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
+<script>try{var id='nba',l=localStorage.getItem('lastLeague'),P={nba:'index.html',wnba:'wnba.html',nhl:'nhl.html',mlb:'mlb.html'};if(!/[?&]lg=/.test(location.search)&&l&&l!==id&&P[l]){location.replace(P[l])}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
 <title>NBA Ratings</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0B1A3A">
@@ -182,7 +182,7 @@ td.res .dt{display:inline}
 select.ty{font-size:12.5px;padding:3px 5px;max-width:132px}
 td.dl{font-size:13px}
 select.exs{font-size:11.5px;padding:2px 2px;margin-left:4px;max-width:56px}
-.chips10 i.o{background:var(--zone2);color:#fff}
+.chips10 i.o{background:var(--zone2);color:#fff}.chips10 i.t{background:var(--mut,#7a8599);color:#fff}
 .seasons td.c{text-align:left}.seasons th,.seasons td{padding:8px 7px}.seasons .tb{margin-right:4px}
 tr.clk{cursor:pointer}
 .setgrid{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
@@ -210,7 +210,7 @@ tr.clk{cursor:pointer}
 .updbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
 .updbar[hidden]{display:none}
 @media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
-.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.06em;padding:8px 18px}.lgsw a.on{background:#fff;color:var(--navy)}
+.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.06em;padding:8px 15px}.lgsw a.on{background:#fff;color:var(--navy)}
 @media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
 </style>
 </head>
@@ -252,7 +252,7 @@ tr.clk{cursor:pointer}
 <header class="hero">
   <div class="hero-in">
     <div class="hero-copy">
-      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="on">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a><a href="nhl.html?lg=nhl" class="">NHL</a></nav>
+      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="on">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a><a href="nhl.html?lg=nhl" class="">NHL</a><a href="mlb.html?lg=mlb" class="">MLB</a></nav>
       <h1>NBA power ratings <br>1946–2027</h1>
       <div class="seasonbar">
         <button id="prevS" aria-label="Previous season">◀</button>
@@ -598,7 +598,7 @@ const LEAGUE = {
   csvName:'nba-2026-27-games.csv'
 };
 
-const BASE_DAY = Date.UTC(1946, 0, 1) / 86400000;
+const BASE_DAY = Date.UTC(LEAGUE.baseYear || 1946, 0, 1) / 86400000;
 function dayToIso(d){ return new Date((BASE_DAY + d) * 86400000).toISOString().slice(0, 10); }
 function seasonLabel(y){ return LEAGUE.seasonLabel(y); }
 const TYPE_LETTERS = 'RCFIP';
@@ -608,11 +608,13 @@ function normCdf(z){
   const p = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
   return z > 0 ? 1 - p : p;
 }
-function normInv(p){
+function normInv(p){   // Acklam's rational approximation (relative error about 1e-9); the former 60-step bisection dominated the running time
   p = Math.min(1 - 1e-9, Math.max(1e-9, p));
-  let lo = -9, hi = 9;
-  for(let i = 0; i < 60; i++){ const mid = (lo + hi) / 2; if(normCdf(mid) < p) lo = mid; else hi = mid; }
-  return (lo + hi) / 2;
+  let q, r;
+  if(p < 0.02425){ q = Math.sqrt(-2 * Math.log(p)); return (((((-7.784894002430293e-03*q - 3.223964580411365e-01)*q - 2.400758277161838e+00)*q - 2.549732539343734e+00)*q + 4.374664141464968e+00)*q + 2.938163982698783e+00) / ((((7.784695709041462e-03*q + 3.224671290700398e-01)*q + 2.445134137142996e+00)*q + 3.754408661907416e+00)*q + 1); }
+  if(p > 0.97575){ q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((-7.784894002430293e-03*q - 3.223964580411365e-01)*q - 2.400758277161838e+00)*q - 2.549732539343734e+00)*q + 4.374664141464968e+00)*q + 2.938163982698783e+00) / ((((7.784695709041462e-03*q + 3.224671290700398e-01)*q + 2.445134137142996e+00)*q + 3.754408661907416e+00)*q + 1); }
+  q = p - 0.5; r = q * q;
+  return (((((-3.969683028665376e+01*r + 2.209460984245205e+02)*r - 2.759285104469687e+02)*r + 1.383577518672690e+02)*r - 3.066479806614716e+01)*r + 2.506628277459239e+00)*q / (((((-5.447609879822406e+01*r + 1.615858368580409e+02)*r - 1.556989798598866e+02)*r + 6.680131188771972e+01)*r - 1.328068155288572e+01)*r + 1);
 }
 function movScore(margin, S){ return S.useMov ? 1 / (1 + Math.exp(-margin / S.movScale)) : (margin > 0 ? 1 : 0); }
 
@@ -647,7 +649,7 @@ function decodeHistory(DATA){
 function eraOf(f, y){
   let e = f.e[0];
   for(let i = 0; i < f.e.length; i++){ if(f.e[i][0] <= y) e = f.e[i]; }
-  return {code:e[1], city:e[2], nick:e[3], name:e[2] + ' ' + e[3]};
+  return {code:e[1], city:e[2], nick:e[3] || e[2], name:(e[2] + ' ' + e[3]).trim()};
 }
 
 function runHistory(D, S0, onProgress, resume){
@@ -735,7 +737,9 @@ function runHistory(D, S0, onProgress, resume){
         const ph = K ? normCdf(normInv(e) * kk) : e;
         out.pH[gi] = ph; out.used[gi] = 1;
         const hw = m > 0 ? 1 : 0, pc = Math.min(1 - 1e-6, Math.max(1e-6, ph));
-        met.n++; met.ll += -(hw ? Math.log(pc) : Math.log(1 - pc)); met.br += (ph - hw) * (ph - hw); met.acc += ((ph > 0.5) === !!hw) ? 1 : 0;
+        met.n++;
+        if(m === 0){ met.ll += -0.5 * (Math.log(pc) + Math.log(1 - pc)); met.br += (ph - 0.5) * (ph - 0.5); met.acc += 0.5; }   // a tie (hockey before 2005) counts as half a win and half a loss
+        else { met.ll += -(hw ? Math.log(pc) : Math.log(1 - pc)); met.br += (ph - hw) * (ph - hw); met.acc += ((ph > 0.5) === !!hw) ? 1 : 0; }
         ent[hl].push({d:d, phiOp:snapPhi[al], s:sH}); ent[al].push({d:-d, phiOp:snapPhi[hl], s:1 - sH});
         lastG[hl] = gi; lastG[al] = gi;
       }
@@ -798,6 +802,7 @@ function fmtDate(iso){ return MONTHS[+iso.slice(5, 7) - 1] + ' ' + (+iso.slice(8
 function fmtInt(n){ return n.toLocaleString('en-US'); }
 const PTS = !!LEAGUE.points, HOT = !!LEAGUE.ot;      // hockey: standings in points, games can end in overtime or a shootout
 const EXN = ['', 'OT', 'SO'];
+const OTLON = function(y){ return HOT && (LEAGUE.otlFrom == null || y >= LEAGUE.otlFrom); };   // seasons in which an overtime loss earns a point
 const spr = function(p){ const k = 1 / (LEAGUE.spreadStep || 0.5); return sgn(-Math.round(spreadOf(p) * k) / k, 1); };
 function lum(hex){
   const n = parseInt(hex.slice(1), 16);
@@ -815,7 +820,7 @@ function gameText(gi, f){
   const y = D.season[gi], home = D.h[gi] === f, opp = home ? D.a[gi] : D.h[gi];
   const own = home ? D.hp[gi] : D.ap[gi], oth = home ? D.ap[gi] : D.hp[gi];
   const where = D.neu[gi] ? 'vs' : (home ? 'vs' : 'at');
-  return (own > oth ? 'W ' : 'L ') + own + '-' + oth + (HOT && D.ex[gi] ? ' ' + EXN[D.ex[gi]] : '') + ' ' + where + ' ' + eraOf(F[opp], y).code + (D.neu[gi] ? ' (neutral)' : '');
+  return (own > oth ? 'W ' : own < oth ? 'L ' : 'T ') + own + '-' + oth + (HOT && D.ex[gi] ? ' ' + EXN[D.ex[gi]] : '') + ' ' + where + ' ' + eraOf(F[opp], y).code + (D.neu[gi] ? ' (neutral)' : '');
 }
 function typePill(gi){ const c = TYPE_LETTERS[D.ty[gi]]; return '<span class="pill ' + c + '">' + TYPE_NAMES[c] + '</span>'; }
 function recDesc(rec, f){
@@ -859,8 +864,14 @@ function deriveChamps(){
     let last = -1;
     for(let gi = sn.g0; gi < sn.g1; gi++) if(D.ty[gi] === 4) last = gi;
     if(last >= 0){
-      const hw = D.hp[last] > D.ap[last];
-      champs[sn.y] = {w:hw ? D.h[last] : D.a[last], l:hw ? D.a[last] : D.h[last]};
+      // the final series: the run of playoff games ending the season between the same two clubs; most wins, then most goals (early finals were decided on total goals)
+      const A = D.a[last], B = D.h[last]; let wA = 0, wB = 0, gA = 0, gB = 0;
+      for(let gi = last; gi >= sn.g0 && D.ty[gi] === 4 && ((D.a[gi] === A && D.h[gi] === B) || (D.a[gi] === B && D.h[gi] === A)); gi--){
+        const a = D.a[gi] === A ? D.ap[gi] : D.hp[gi], b = D.a[gi] === A ? D.hp[gi] : D.ap[gi];
+        gA += a; gB += b; if(a > b) wA++; else if(b > a) wB++;
+      }
+      const aw = wA !== wB ? wA > wB : gA > gB;
+      champs[sn.y] = {w:aw ? A : B, l:aw ? B : A};
     }
   });
 }
@@ -890,7 +901,7 @@ function setSeason(i, keepPos){
 // ---------- ratings tab ----------
 function seasonFacts(){
   const sn = cur(), y = sn.y, ch = champs[y], live = y === LIVE_Y;
-  let t = '<b>' + sn.nT + ' teams</b> · home edge <b>' + sn.hca + '</b> pts · ' + (live ? '<b>season in progress</b>' : ch ? 'champion <b>' + tname(ch.w, y) + '</b>' : 'no playoff data');
+  let t = '<b>' + sn.nT + ' teams</b> · home edge <b>' + sn.hca + '</b> pts · ' + (live ? '<b>season in progress</b>' : ch ? (LEAGUE.champWord ? LEAGUE.champWord(y) : 'champion') + ' <b>' + tname(ch.w, y) + '</b>' : 'no playoff data');
   if(sn.entered.length && R.seasons.indexOf(sn) > 0) t += '<br>Entered: ' + sn.entered.map(function(f){ return tname(f, y); }).join(', ') + (sn.newRating != null ? ' at ' + sn.newRating.toFixed(0) : '');
   if(sn.left.length) t += '<br>Left: ' + sn.left.map(function(f){ return tname(f, y - 1); }).join(', ') + '; all teams shifted ' + sgn(sn.shift, 1);
   else if(Math.abs(sn.shift) > 0.05) t += '<br>All teams shifted ' + sgn(sn.shift, 1) + ' to restore the 1500 average';
@@ -912,21 +923,22 @@ function renderRatings(){
   const sn = cur(), nT = sn.nT, y = sn.y, lim = dayLimit();
   $('#when').textContent = whenText();
   const loc = {}; sn.teams.forEach(function(f, l){ loc[f] = l; });
-  const rw = new Array(nT).fill(0), rl = new Array(nT).fill(0), ro = new Array(nT).fill(0), pw = new Array(nT).fill(0), pl = new Array(nT).fill(0);
-  let anyEx = false;
+  const rw = new Array(nT).fill(0), rl = new Array(nT).fill(0), ro = new Array(nT).fill(0), rt = new Array(nT).fill(0), pw = new Array(nT).fill(0), pl = new Array(nT).fill(0);
+  let anyEx = false, anyTie = false;
   for(let gi = sn.g0; gi < sn.g1; gi++){
     if(HOT && D.ex[gi]) anyEx = true;
+    if(D.hp[gi] === D.ap[gi] && D.ty[gi] <= 1) anyTie = true;
     if(!R.used[gi] || D.day[gi] > lim) continue;
-    const t = D.ty[gi], hw = D.hp[gi] > D.ap[gi], h = loc[D.h[gi]], a = loc[D.a[gi]], otl = HOT && D.ex[gi] > 0;
-    if(t <= 1){ const wI = hw ? h : a, lI = hw ? a : h; rw[wI]++; if(otl) ro[lI]++; else rl[lI]++; }
-    else if(t >= 3){ if(hw){ pw[h]++; pl[a]++; } else { pw[a]++; pl[h]++; } }
+    const t = D.ty[gi], hw = D.hp[gi] > D.ap[gi], tie = D.hp[gi] === D.ap[gi], h = loc[D.h[gi]], a = loc[D.a[gi]], otl = OTLON(y) && D.ex[gi] > 0;
+    if(t <= 1){ if(tie){ rt[h]++; rt[a]++; } else { const wI = hw ? h : a, lI = hw ? a : h; rw[wI]++; if(otl) ro[lI]++; else rl[lI]++; } }
+    else if(t >= 3 && !tie){ if(hw){ pw[h]++; pl[a]++; } else { pw[a]++; pl[h]++; } }
   }
-  const showO = HOT && anyEx;
+  const showO = OTLON(y) && anyEx, showT = anyTie;
   const rows = sn.teams.map(function(f, l){
     const rating = pos === 0 ? sn.startRating[l] : sn.rate[(pos - 1) * nT + l];
     const rd = pos === 0 ? sn.startRD[l] : sn.rd[(pos - 1) * nT + l];
     const ser = [sn.startRating[l]]; for(let p = 0; p < pos; p++) ser.push(sn.rate[p * nT + l]);
-    return {f:f, l:l, name:tname(f, y), rating:rating, rd:rd, dlt:rating - sn.startRating[l], w:rw[l] + rl[l] + ro[l] ? (PTS && showO ? (2 * rw[l] + ro[l]) / (2 * (rw[l] + rl[l] + ro[l])) : rw[l] / (rw[l] + rl[l] + ro[l])) + rw[l] * 1e-4 : -1, rw:rw[l], rl:rl[l], ro:ro[l], pw:pw[l], pl:pl[l],
+    return {f:f, l:l, name:tname(f, y), rating:rating, rd:rd, dlt:rating - sn.startRating[l], w:rw[l] + rl[l] + ro[l] + rt[l] ? (PTS ? (2 * rw[l] + rt[l] + ro[l]) / (2 * (rw[l] + rl[l] + ro[l] + rt[l])) : rw[l] / (rw[l] + rl[l] + ro[l])) + rw[l] * 1e-4 : -1, rw:rw[l], rl:rl[l], ro:ro[l], rt:rt[l], pw:pw[l], pl:pl[l],
       hiR:sn.hiR[l], loR:sn.loR[l], ser:ser};
   });
   const order = rows.slice().sort(function(a, b){ return b.rating - a.rating; }), rank = {};
@@ -946,7 +958,7 @@ function renderRatings(){
     return '<tr data-f="' + r.f + '"><td class="rk">' + rank[r.f] + '</td><td class="l">' + badge(r.f, y) + '<span class="hide-s">' + r.name + '</span>' + star + '</td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + r.rating.toFixed(0) + '</b><span class="rbar"><i style="width:' + barW + '%"></i></span></td>' +
       '<td class="' + cls + '">' + sgn(r.dlt, 1) + '</td><td class="mut hide-s">' + r.rd.toFixed(0) + '</td>' +
-      '<td>' + r.rw + '-' + r.rl + (showO ? '-' + r.ro : '') + (PTS && showO ? ' <span class="mut">' + (2 * r.rw + r.ro) + '</span>' : '') + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
+      '<td>' + r.rw + '-' + r.rl + (showT ? '-' + r.rt : '') + (showO ? '-' + r.ro : '') + (PTS ? ' <span class="mut">' + (2 * r.rw + r.rt + r.ro) + '</span>' : '') + '</td><td class="hide-s mut">' + (r.pw + r.pl ? r.pw + '-' + r.pl : '–') + '</td>' +
       '<td class="hide-s">' + sparkline(r.ser) + '</td></tr>';
   }).join('');
   renderProj();
@@ -1017,7 +1029,7 @@ function renderProj(){
     });
   } else if(view === 'div' && LEAGUE.divisions && LEAGUE.divNames){
     LEAGUE.divisions.forEach(function(dv, z){
-      html += '<tr class="grp"><td colspan="' + NC + '">' + LEAGUE.divNames[z] + ' Division</td></tr>';
+      html += '<tr class="grp"><td colspan="' + NC + '">' + LEAGUE.divNames[z] + (LEAGUE.divWord === undefined ? ' Division' : LEAGUE.divWord ? ' ' + LEAGUE.divWord : '') + '</td></tr>';
       list.filter(function(x){ return dv.indexOf(F[x.f].k) >= 0; }).sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
     });
   } else list.slice().sort(byProj).forEach(function(x, i){ html += row(x, i + 1); });
@@ -1042,28 +1054,29 @@ function openTeam(f, noPush){
   const rank = ord.findIndex(function(x){ return x.f === f; }) + 1;
   const dSeason = now.r - pts[0].r, dMonth = now.r - ratingAt(sn, l, last - 30), dWeek = now.r - ratingAt(sn, l, last - 7);
   // games
-  let w = 0, lo = 0, otl = 0, anyEx = false; const lastGames = [];
+  let w = 0, lo = 0, otl = 0, tt = 0, anyEx = false, anyTie = false; const lastGames = [];
   for(let gi = sn.g0; gi < sn.g1; gi++){
     if(HOT && D.ex[gi]) anyEx = true;
+    if(D.hp[gi] === D.ap[gi] && D.ty[gi] <= 1) anyTie = true;
     if(!R.used[gi] || D.day[gi] > lim || (D.h[gi] !== f && D.a[gi] !== f)) continue;
-    const home = D.h[gi] === f, win = home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi], isO = HOT && !win && D.ex[gi] > 0;
-    if(D.ty[gi] <= 1){ if(win) w++; else if(isO) otl++; else lo++; }
-    lastGames.push({gi:gi, home:home, win:win, ot:isO, opp:home ? D.a[gi] : D.h[gi]});
+    const home = D.h[gi] === f, tie = D.hp[gi] === D.ap[gi], win = !tie && (home ? D.hp[gi] > D.ap[gi] : D.ap[gi] > D.hp[gi]), isO = OTLON(y) && !win && !tie && D.ex[gi] > 0;
+    if(D.ty[gi] <= 1){ if(win) w++; else if(tie) tt++; else if(isO) otl++; else lo++; }
+    lastGames.push({gi:gi, home:home, win:win, tie:tie, ot:isO, opp:home ? D.a[gi] : D.h[gi]});
   }
-  const showO = HOT && anyEx, recTxt = w + '-' + lo + (showO ? '-' + otl : '');
-  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length, l10o = l10.filter(function(x){ return x.ot; }).length;
+  const showO = OTLON(y) && anyEx, showT = anyTie, recTxt = w + '-' + lo + (showT ? '-' + tt : '') + (showO ? '-' + otl : '');
+  const l10 = lastGames.slice(-10).reverse(), l10w = l10.filter(function(x){ return x.win; }).length, l10o = l10.filter(function(x){ return x.ot; }).length, l10t = l10.filter(function(x){ return x.tie; }).length;
   const sg = function(v){ return '<b class="' + (v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut') + '">' + sgn(v, 1) + '</b>'; };
   let proj = null; if(live){ proj = projection()[f]; }
   let h = '<div class="td-h">' + badge(f, y) + '<h2>' + tname(f, y) + '</h2></div>' +
-    '<p class="td-sub">' + seasonLabel(y) + ' · as of ' + (pos === 0 ? 'season start' : fmtDate(dayToIso(last))) + ' · ' + (CUR_CONF(f) ? CUR_CONF(f) + ' · ' : '') + '#' + rank + ' of ' + nT + ' by rating</p>' +
+    '<p class="td-sub">' + seasonLabel(y) + ' · as of ' + (pos === 0 ? 'season start' : fmtDate(dayToIso(last))) + ' · ' + (CUR_CONF(f) && (live || !HOT) ? CUR_CONF(f) + ' · ' : '') + '#' + rank + ' of ' + nT + ' by rating</p>' +
     '<div class="tiles">' +
     '<div class="tile"><b>' + now.r.toFixed(0) + '</b><span>Rating</span></div>' +
     '<div class="tile"><b>±' + now.rd.toFixed(0) + '</b><span>RD (uncertainty)</span></div>' +
     '<div class="tile">' + sg(dSeason) + '<span>Δ season</span></div>' +
     '<div class="tile">' + sg(dMonth) + '<span>Δ last 30 days</span></div>' +
     '<div class="tile">' + sg(dWeek) + '<span>Δ last 7 days</span></div>' +
-    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w - (showO ? l10o : 0)) + (showO ? '-' + l10o : '') + '</b><span>Last ' + l10.length + '</span></div>' +
-    '<div class="tile"><b>' + recTxt + '</b><span>Record' + (PTS && showO ? ' · ' + (2 * w + otl) + ' pts' : '') + '</span></div>' +
+    '<div class="tile"><b>' + l10w + '-' + (l10.length - l10w - l10t - (showO ? l10o : 0)) + (showT ? '-' + l10t : '') + (showO ? '-' + l10o : '') + '</b><span>Last ' + l10.length + '</span></div>' +
+    '<div class="tile"><b>' + recTxt + '</b><span>Record' + (PTS ? ' · ' + (2 * w + tt + otl) + ' pts' : '') + '</span></div>' +
     (proj && PTS ? '<div class="tile"><b>' + f1(proj.projPts) + '</b><span>' + (proj.rest > 0 ? 'Projected final points' : 'Final points') + '</span></div>' +
       (proj.rest > 0 ? '<div class="tile"><b>' + f1(proj.ept) + '</b><span>Expected points, rest (' + proj.rest + ' left)</span></div>' : '') +
       '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' :
@@ -1072,10 +1085,10 @@ function openTeam(f, noPush){
       '<div class="tile"><b>' + (isNaN(proj.sos) ? '–' : proj.sos.toFixed(0)) + '</b><span>SOS, remaining</span></div>' : '') +
     '</div>' +
     '<h3>Rating through the season</h3><div class="chart" id="tdChart"></div>' +
-    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : x.ot ? 'o' : 'l') + '">' + (x.win ? 'W' : x.ot ? 'OTL' : 'L') + '</i>'; }).join('') + '</div>' +
+    '<h3>Last ' + l10.length + ' games</h3><div class="chips10">' + l10.slice().reverse().map(function(x){ return '<i class="' + (x.win ? 'w' : x.tie ? 't' : x.ot ? 'o' : 'l') + '">' + (x.win ? 'W' : x.tie ? 'T' : x.ot ? 'OTL' : 'L') + '</i>'; }).join('') + '</div>' +
     '<table class="td-t"><tbody>' + l10.map(function(x){
       const gi = x.gi, mine = x.home ? D.hp[gi] : D.ap[gi], theirs = x.home ? D.ap[gi] : D.hp[gi], dl = x.home ? R.dH[gi] : R.dA[gi];
-      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : 'down') + '">' + (x.win ? 'W' : x.ot ? 'OTL' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + (HOT && D.ex[gi] ? ' <span class="mut">' + EXN[D.ex[gi]] + '</span>' : '') + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
+      return '<tr><td class="mut">' + fmtDate(dayToIso(D.day[gi])).replace(/, \d{4}/, '') + '</td><td><b class="' + (x.win ? 'up' : x.tie ? 'mut' : 'down') + '">' + (x.win ? 'W' : x.tie ? 'T' : x.ot ? 'OTL' : 'L') + '</b> ' + (x.home ? 'vs' : '@') + ' ' + badge(x.opp, y) + '</td><td>' + mine + '-' + theirs + (HOT && D.ex[gi] ? ' <span class="mut">' + EXN[D.ex[gi]] + '</span>' : '') + '</td><td class="' + (dl > 0 ? 'up' : 'down') + '">' + sgn(dl, 1) + '</td></tr>';
     }).join('') + '</tbody></table>';
   if(proj && proj.upc.length){
     h += '<h3>Next games</h3><table class="td-t"><tbody>' + proj.upc.slice(0, 6).map(function(u){
@@ -1090,7 +1103,7 @@ function openTeam(f, noPush){
 }
 function CUR_CONF(f){
   const g = GROUPS.length > 1 && F[f].cur ? GROUP_OF[F[f].k] : null, c = g ? g.label.replace(/ern$/, '') : '';
-  if(g && LEAGUE.divisions && LEAGUE.divNames){ const z = LEAGUE.divisions.findIndex(function(d){ return d.indexOf(F[f].k) >= 0; }); if(z >= 0) return LEAGUE.divNames[z] + ' \u00b7 ' + c; }
+  if(g && LEAGUE.divisions && LEAGUE.divNames){ const z = LEAGUE.divisions.findIndex(function(d){ return d.indexOf(F[f].k) >= 0; }); if(z >= 0) return LEAGUE.divOnly ? LEAGUE.divNames[z] : LEAGUE.divNames[z] + ' \u00b7 ' + c; }
   return c;
 }
 function closeTeam(fromPop){
@@ -1165,10 +1178,10 @@ function renderGames(){
   list.slice(0, gShown).forEach(function(gi){
     const day = D.day[gi];
     if(day !== last){ html += '<tr class="dh"><td colspan="10">' + fmtDate(dayToIso(day)) + '</td></tr>'; last = day; }
-    const hw = D.hp[gi] > D.ap[gi], p = R.pH[gi];
+    const hw = D.hp[gi] > D.ap[gi], tie = D.hp[gi] === D.ap[gi], p = R.pH[gi];
     const cls = function(v){ return v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'mut'; };
     html += '<tr><td class="mut l">' + dayToIso(day).slice(5) + '</td><td class="l hide-s">' + typePill(gi) + '</td>' +
-      '<td class="t">' + badge(D.a[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.a[gi]], y).nick + '</span></td><td' + (hw ? ' class="mut"' : ' style="font-weight:700"') + '>' + D.ap[gi] + '</td>' +
+      '<td class="t">' + badge(D.a[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.a[gi]], y).nick + '</span></td><td' + (hw || tie ? ' class="mut"' : ' style="font-weight:700"') + '>' + D.ap[gi] + '</td>' +
       '<td class="at">' + (D.neu[gi] ? 'vs' : '@') + '</td><td' + (hw ? ' style="font-weight:700"' : ' class="mut"') + '>' + D.hp[gi] + (HOT && D.ex[gi] ? ' <small class="mut">' + EXN[D.ex[gi]] + '</small>' : '') + '</td>' +
       '<td class="t">' + badge(D.h[gi], y) + '<span class="nick hide-s">' + eraOf(F[D.h[gi]], y).nick + '</span></td>' +
       '<td class="mut">' + (p * 100).toFixed(0) + '%</td><td class="' + cls(R.dA[gi]) + '">' + sgn(R.dA[gi], 1) + '</td><td class="' + cls(R.dH[gi]) + '">' + sgn(R.dH[gi], 1) + '</td></tr>';
@@ -1345,8 +1358,11 @@ let LG = loadLive(), liveGi = new Map(), liveStart = 0;
 let lShown = 300;
 
 function gkey(d, a, h){ return d + '|' + a + '|' + h; }
+// doubleheaders: the second game of the same pairing on the same day gets the id suffix #2, the third #3 (identical rows in a file keep their order)
+function occKey(cnt, d, a, h){ const k = gkey(d, a, h), c = (cnt[k] = (cnt[k] || 0) + 1); return c > 1 ? k + '#' + c : k; }
 function freshLive(){
-  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:gkey(r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, ex:has && HOT ? (r[7] || 0) : 0, src:'f', auto:has ? 1 : undefined}; });
+  const oc = {};
+  return LIVE_SCHEDULE.games.map(function(r){ const has = r[5] != null && r[6] != null; return {id:occKey(oc, r[0], r[1], r[2]), date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:has ? r[5] : null, hPts:has ? r[6] : null, ex:has && HOT ? (r[7] || 0) : 0, src:'f', auto:has ? 1 : undefined}; });
 }
 function loadLive(){
   try{
@@ -1587,7 +1603,7 @@ function parseSchedule(text){
     const awayIdx = n.findIndex(function(x){ return x.indexOf('visitor') === 0 || x === 'away' || x === 'awayteam'; });
     const homeIdx = n.findIndex(function(x){ return x.indexOf('home') === 0 && x.indexOf('pts') < 0; });
     if(n.indexOf('date') >= 0 && awayIdx >= 0 && homeIdx >= 0){
-      const ptsIdx = []; n.forEach(function(x, i){ if(x === 'pts' || (HOT && x === 'g')) ptsIdx.push(i); });
+      const ptsIdx = []; n.forEach(function(x, i){ if(x === 'pts' || (HOT && x === 'g') || (LEAGUE.scoreCol && x === LEAGUE.scoreCol)) ptsIdx.push(i); });
       let otIdx = n.indexOf('ot'); if(otIdx < 0 && HOT && ptsIdx[1] != null && (n[ptsIdx[1] + 1] === '' || n[ptsIdx[1] + 1] === 'so')) otIdx = ptsIdx[1] + 1;
       cols = {date:n.indexOf('date'), away:awayIdx, home:homeIdx, ot:otIdx,
         aP:n.indexOf('awaypts') >= 0 ? n.indexOf('awaypts') : (ptsIdx[0] != null ? ptsIdx[0] : -1),
@@ -1617,9 +1633,9 @@ function parseSchedule(text){
 function lastRsDate(){ let d = ''; LG.forEach(function(g){ if(g.type === 'R' && g.date > d) d = g.date; }); return d; }
 function mergeRows(rows, deflt){
   const idx = new Map(); LG.forEach(function(x){ idx.set(x.id, x); });
-  const rsEnd = lastRsDate(); let added = 0, updated = 0;
+  const rsEnd = lastRsDate(); let added = 0, updated = 0; const oc = {};
   rows.forEach(function(r){
-    const k = gkey(r.date, r.away, r.home), ex = idx.get(k);
+    const k = occKey(oc, r.date, r.away, r.home), ex = idx.get(k);
     const type = r.type || (deflt !== 'auto' ? deflt : (r.date > rsEnd ? 'P' : 'R'));
     if(ex){
       let ch = false;
@@ -1657,9 +1673,9 @@ let lastSync = 0;
 function mergeFile(file){
   const rows = file.games || [], idx = new Map(), fileIds = new Set();
   LG.forEach(function(g){ idx.set(g.id, g); });
-  let added = 0, filled = 0, removed = 0;
+  let added = 0, filled = 0, removed = 0; const oc = {};
   rows.forEach(function(r){
-    const id = gkey(r[0], r[1], r[2]); fileIds.add(id);
+    const id = occKey(oc, r[0], r[1], r[2]); fileIds.add(id);
     if(FK[r[1]] === undefined || FK[r[2]] === undefined) return;
     let g = idx.get(id);
     if(!g){ g = {id:id, date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:null, hPts:null, src:'f'}; LG.push(g); idx.set(id, g); added++; }
@@ -1735,15 +1751,16 @@ function createSimulation(opts){
   const nn = n * n, grp = new Int8Array(n).fill(-1), div = new Int8Array(n).fill(-1);
   GROUPS.forEach(function(g, z){ g.teams.forEach(function(k){ if(idx[k] !== undefined) grp[idx[k]] = z; }); });
   (LEAGUE.divisions || []).forEach(function(d, z){ d.forEach(function(k){ if(idx[k] !== undefined) div[idx[k]] = z; }); });
-  const mkT = function(){ return {hw:new Int16Array(nn), gm:new Int16Array(nn), pd:new Float64Array(nn), tp:new Float64Array(n), cw:new Int16Array(n), cg:new Int16Array(n),
+  const mkT = function(){ return {hw:new Int16Array(nn), gm:new Int16Array(nn), pd:new Float64Array(nn), tp:new Float64Array(n), cw:new Int16Array(n), cg:new Int16Array(n), dg:new Int16Array(n), dv:new Int16Array(n),
     pt:new Int16Array(n), rw:new Int16Array(n), ro:new Int16Array(n), hp:new Int16Array(nn)}; };
   const B = mkT(), SX = mkT();
-  const copyT = function(d, q){ d.hw.set(q.hw); d.gm.set(q.gm); d.pd.set(q.pd); d.tp.set(q.tp); d.cw.set(q.cw); d.cg.set(q.cg); d.pt.set(q.pt); d.rw.set(q.rw); d.ro.set(q.ro); d.hp.set(q.hp); };
+  const copyT = function(d, q){ d.hw.set(q.hw); d.gm.set(q.gm); d.pd.set(q.pd); d.tp.set(q.tp); d.cw.set(q.cw); d.cg.set(q.cg); d.dg.set(q.dg); d.dv.set(q.dv); d.pt.set(q.pt); d.rw.set(q.rw); d.ro.set(q.ro); d.hp.set(q.hp); };
   function rec(o, h, a, hwin, m, xx){
     const wI = hwin ? h : a, lI = hwin ? a : h;
     o.hw[wI * n + lI]++; o.gm[h * n + a]++; o.gm[a * n + h]++;
     o.pd[wI * n + lI] += m; o.pd[lI * n + wI] -= m; o.tp[wI] += m; o.tp[lI] -= m;
     if(grp[h] === grp[a]){ o.cg[h]++; o.cg[a]++; o.cw[wI]++; }
+    if(div[h] >= 0 && div[h] === div[a]){ o.dg[h]++; o.dg[a]++; o.dv[wI]++; }
     if(PTS){   // hockey: 2 points for a win, 1 for an overtime or shootout loss; regulation wins (RW) and wins excluding shootouts (ROW) break ties
       const e = xx | 0; o.pt[wI] += 2; o.hp[wI * n + lI] += 2;
       if(e > 0){ o.pt[lI]++; o.hp[lI * n + wI]++; }
@@ -1767,7 +1784,7 @@ function createSimulation(opts){
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd, LIM = 6, TN = 2400, TAB = new Float64Array(TN + 1);
   for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
   const SC = TN / (2 * LIM), hh = sn.hca / Q;
-  const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'};
+  const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = PO.pat || {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'}, seedv = new Float64Array(n);
   const reach = new Float64Array(n * (NR + 1));
   const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
   const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
@@ -1801,6 +1818,10 @@ function createSimulation(opts){
       if(LEAGUE.tiebreak === 'nhl'){
         // official order after points: regulation wins, wins excluding shootouts, total wins, points in games among the tied clubs, goal differential
         v.push(SX.rw[t], SX.ro[t], w[t], gmS ? hpS / (2 * gmS) : 0.5, SX.tp[t]);
+      } else if(LEAGUE.tiebreak === 'mlb'){
+        // head-to-head, then the record inside the division (when the clubs share one), then the record inside the league, then run differential
+        const same = div[b[0]] >= 0 && b.every(function(j){ return div[j] === div[b[0]]; });
+        v.push(h2h, same && SX.dg[t] ? SX.dv[t] / SX.dg[t] : 0.5, SX.cg[t] ? SX.cw[t] / SX.cg[t] : 0.5, SX.tp[t]);
       } else if(LEAGUE.tiebreak === 'nba'){
         const same = m === 2 && div[b[0]] >= 0 && div[b[0]] === div[b[1]];
         const dv = m === 2 ? (same ? dw[t] : 0) : dw[t], cf = SX.cg[t] ? SX.cw[t] / SX.cg[t] : 0.5;
@@ -1876,7 +1897,7 @@ function createSimulation(opts){
   });
   known.forEach(function(s){ s.sched.sort(function(p, q){ return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }); });
   let fixedBracket = null;
-  if(serList.length){
+  if(serList.length && LEAGUE.qual !== 'mlb'){
     w.set(base); gms.set(gp); copyT(SX, B);
     assignKeys(true); const pk = key.slice();
     const pct = function(i){ return pk[i]; };
@@ -1915,7 +1936,9 @@ function createSimulation(opts){
     let wa = 0, wb = 0, sched = null, si = 0;
     if(k){ wa = a === k.x ? k.wx : k.wy; wb = a === k.x ? k.wy : k.wx; sched = k.sched; }
     let g = wa + wb;
-    const higher = key[a] >= key[b] ? a : b, lower = higher === a ? b : a;
+    if(a < 0 || b < 0) return a < 0 ? b : a;      // a bye
+    const hv = LEAGUE.qual === 'mlb' && rd < NR - 1 ? function(t){ return -seedv[t]; } : function(t){ return key[t]; };
+    const higher = hv(a) >= hv(b) ? a : b, lower = higher === a ? b : a;
     while(wa < need && wb < need){
       let h, aw;
       if(sched && si < sched.length){ h = sched[si].h; aw = sched[si].a; si++; }
@@ -1932,7 +1955,16 @@ function createSimulation(opts){
     const rest = byKey(dv[0].slice(3).concat(dv[1].slice(3))), a1 = dv[0][0], b1 = dv[1][0], aBetter = key[a1] >= key[b1];
     return [a1, aBetter ? rest[1] : rest[0], dv[0][1], dv[0][2], b1, aBetter ? rest[0] : rest[1], dv[1][1], dv[1][2]];
   }
+  function bracketMLB(gi){
+    // three division winners (seeded by record) then three wild cards (by record); seeds 1 and 2 skip the Wild Card Series; no reseeding afterwards
+    const byKey = function(arr){ return arr.slice().sort(function(p, q){ return key[q] - key[p]; }); };
+    const dws = LEAGUE.divOfGroup[gi].map(function(z){ return byKey(GI[gi].filter(function(t){ return div[t] === z; }))[0]; });
+    const wcs = byKey(GI[gi].filter(function(t){ return dws.indexOf(t) < 0; })).slice(0, 3), sd = byKey(dws).concat(wcs);
+    sd.forEach(function(t, i){ seedv[t] = i + 1; });
+    return [sd[0], -1, sd[3], sd[4], sd[2], sd[5], sd[1], -1];
+  }
   function bracketFromSeeds(gi){
+    if(LEAGUE.qual === 'mlb') return bracketMLB(gi);
     if(LEAGUE.qual === 'nhl') return bracketNHL(gi);
     const g = GI[gi].slice().sort(function(p, q){ return key[q] - key[p]; });
     let s7 = g[6], s8 = g[7];
@@ -1944,7 +1976,7 @@ function createSimulation(opts){
   }
   function runPlayoffs(){
     let cur = GI.map(function(g, gi){ return fixedBracket ? fixedBracket[gi].slice() : bracketFromSeeds(gi); });
-    const mark = function(r){ cur.forEach(function(g){ g.forEach(function(t){ reach[t * (NR + 1) + r]++; }); }); };
+    const mark = function(r){ cur.forEach(function(g){ g.forEach(function(t){ if(t >= 0) reach[t * (NR + 1) + r]++; }); }); };
     let rd = 0; mark(0);
     for(let guard = 0; guard < 12; guard++){
       cur = cur.map(function(g){
@@ -2049,13 +2081,13 @@ function renderSim(res, n){
     let h = '<thead><tr><th class="l">Team</th><th>' + (PTS ? 'Avg pts' : 'Avg W') + '</th>';
     for(let k = 1; k <= gr.teams.length; k++) h += '<th class="pos ' + zoneOf(k) + '">' + k + '</th>';
     LEAGUE.tops.forEach(function(c){ h += '<th>Top ' + c + '</th>'; });
-    if(PTS) h += '<th title="Wins the division (most points; tiebreakers apply)">Div.</th><th title="Makes the playoffs: top three in the division or one of the two conference wild cards">Playoffs</th>';
+    if(PTS || LEAGUE.divCols) h += '<th title="Wins the division (tiebreakers apply)">Div.</th><th title="' + (LEAGUE.playTip || 'Makes the playoffs: top three in the division or one of the two conference wild cards') + '">Playoffs</th>';
     h += '</tr></thead><tbody>';
     rows.forEach(function(r){
       h += '<tr><td class="l">' + badge(r.f, LIVE_Y) + eraOf(F[r.f], LIVE_Y).nick + '</td><td>' + r.avgW.toFixed(PTS ? 1 : 1) + '</td>';
       r.pos.slice(0, gr.teams.length).forEach(function(f, k){ h += pctCell(f, tname(r.f, LIVE_Y) + ' finishes ' + ordinal(k + 1) + ' in ' + (f * 100).toFixed(1) + '% of seasons'); });
       r.tops.forEach(function(v){ h += '<td class="sum">' + (v * 100).toFixed(1) + '</td>'; });
-      if(PTS) h += '<td class="sum">' + (r.divw * 100).toFixed(1) + '</td><td class="sum">' + (r.reach[0] * 100).toFixed(1) + '</td>';
+      if(PTS || LEAGUE.divCols) h += '<td class="sum">' + (r.divw * 100).toFixed(1) + '</td><td class="sum">' + (r.reach[0] * 100).toFixed(1) + '</td>';
       h += '</tr>';
     });
     $('#simTbl' + sl).innerHTML = h + '</tbody>';
@@ -2098,8 +2130,8 @@ function wireLive(){
       '<th title="Wins-losses-overtime losses so far">W-L-OTL</th><th title="Points so far (2 for a win, 1 for an overtime or shootout loss)">Pts</th>' +
       '<th title="Expected points in the games still to play, using today\'s ratings">Rest</th><th title="Expected final points: points so far + expected rest of season">Final</th>' +
       '<th title="Remaining strength of schedule: average rating of the opponents still to play, adjusted for home ice">SOS</th>';
-    if(LEAGUE.divisions && LEAGUE.divNames) $('#projView').insertAdjacentHTML('beforeend', '<option value="div">Division</option>');
   }
+  if(LEAGUE.divisions && LEAGUE.divNames) $('#projView').insertAdjacentHTML('beforeend', '<option value="div">Division</option>');
   $$('.legend').forEach(function(el){
     let from = 1; el.innerHTML = LEAGUE.zones.map(function(z){ const s = '<span class="' + z.cls + '"><i></i>' + from + '\u2013' + z.to + ' ' + z.label + '</span>'; from = z.to + 1; return s; }).join('');
   });
