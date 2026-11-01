@@ -858,7 +858,6 @@ function compute(){
 function deriveChamps(){
   champs = {};
   D.seasons.forEach(function(sn){
-    if(sn.y === LIVE_Y) return; // the live season has no champion until it is over
     let last = -1;
     for(let gi = sn.g0; gi < sn.g1; gi++) if(D.ty[gi] === 4) last = gi;
     if(last >= 0){
@@ -867,6 +866,10 @@ function deriveChamps(){
       for(let gi = last; gi >= sn.g0 && D.ty[gi] === 4 && ((D.a[gi] === A && D.h[gi] === B) || (D.a[gi] === B && D.h[gi] === A)); gi--){
         const a = D.a[gi] === A ? D.ap[gi] : D.hp[gi], b = D.a[gi] === A ? D.hp[gi] : D.ap[gi];
         gA += a; gB += b; if(a > b) wA++; else if(b > a) wB++;
+      }
+      if(sn.y === LIVE_Y){   // the live season has a champion only once the last series has been won
+        const lens = LEAGUE.playoff.rounds, need = (lens[lens.length - 1] + 1) >> 1;
+        if(Math.max(wA, wB) < need) return;
       }
       const aw = wA !== wB ? wA > wB : gA > gB;
       champs[sn.y] = {w:aw ? A : B, l:aw ? B : A};
@@ -899,7 +902,7 @@ function setSeason(i, keepPos){
 // ---------- ratings tab ----------
 function seasonFacts(){
   const sn = cur(), y = sn.y, ch = champs[y], live = y === LIVE_Y;
-  let t = '<b>' + sn.nT + ' teams</b> · home edge <b>' + sn.hca + '</b> pts · ' + (live ? '<b>season in progress</b>' : ch ? (LEAGUE.champWord ? LEAGUE.champWord(y) : 'champion') + ' <b>' + tname(ch.w, y) + '</b>' : 'no playoff data');
+  let t = '<b>' + sn.nT + ' teams</b> · home edge <b>' + sn.hca + '</b> pts · ' + (live && !ch ? '<b>season in progress</b>' : ch ? (LEAGUE.champWord ? LEAGUE.champWord(y) : 'champion') + ' <b>' + tname(ch.w, y) + '</b>' : 'no playoff data');
   if(sn.entered.length && R.seasons.indexOf(sn) > 0) t += '<br>Entered: ' + sn.entered.map(function(f){ return tname(f, y); }).join(', ') + (sn.newRating != null ? ' at ' + sn.newRating.toFixed(0) : '');
   if(sn.left.length) t += '<br>Left: ' + sn.left.map(function(f){ return tname(f, y - 1); }).join(', ') + '; all teams shifted ' + sgn(sn.shift, 1);
   else if(Math.abs(sn.shift) > 0.05) t += '<br>All teams shifted ' + sgn(sn.shift, 1) + ' to restore the 1500 average';
