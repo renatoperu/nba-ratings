@@ -211,7 +211,7 @@ tr.clk{cursor:pointer}
 .updbar[hidden]{display:none}
 @media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
 .lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.05em;padding:8px 11px}.lgsw a.on{background:#fff;color:var(--navy)}
-@media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
+@media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:block;width:230px;max-width:70%;margin:4px 0 6px}.court-wrap figcaption{font-size:12px}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
 </style>
 </head>
 <body>
@@ -1021,7 +1021,7 @@ function renderProj(){
   const NC = PTS ? 8 : 7;
   const row = function(x, n){
     const c = F[x.f].c;
-    return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span></td>' +
+    return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span>' + (champs[LIVE_Y] && champs[LIVE_Y].w === x.f ? ' <span title="Champion">\ud83c\udfc6</span>' : '') + '</td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + x.rating.toFixed(0) + '</b></td>' +
       (PTS ? '<td>' + x.w + '-' + x.l + '-' + x.otl + '</td><td><b>' + x.pts + '</b></td><td class="c2 mut">' + f1(x.ept) + '</td><td class="c2"><b>' + f1(x.projPts) + '</b></td>'
            : '<td>' + x.w + '-' + x.l + (x.t ? '-' + x.t : '') + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td><td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td>') +
