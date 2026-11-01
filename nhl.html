@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<script>try{var id='nhl',l=localStorage.getItem('lastLeague'),P={nba:'index.html',wnba:'wnba.html',nhl:'nhl.html',mlb:'mlb.html'};if(!/[?&]lg=/.test(location.search)&&l&&l!==id&&P[l]){location.replace(P[l])}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
+<script>try{var id='nhl',l=localStorage.getItem('lastLeague'),P={nba:'index.html',wnba:'wnba.html',nhl:'nhl.html',mlb:'mlb.html',nfl:'nfl.html'};if(!/[?&]lg=/.test(location.search)&&l&&l!==id&&P[l]){location.replace(P[l])}else{localStorage.setItem('lastLeague',id)}}catch(e){}</script>
 <title>NHL Ratings</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0B1A3A">
@@ -210,7 +210,7 @@ tr.clk{cursor:pointer}
 .updbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
 .updbar[hidden]{display:none}
 @media(max-width:620px){.dlg-in{margin:0;border-radius:0;min-height:100%;padding-top:calc(18px + env(safe-area-inset-top))}#projTbl th,#projTbl td{padding:8px 3px;font-size:13px}#projTbl .tb{min-width:38px;margin-right:0}}
-.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.06em;padding:8px 15px}.lgsw a.on{background:#fff;color:var(--navy)}
+.lgsw{display:inline-flex;margin:0 0 12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;overflow:hidden}.lgsw a{color:#fff;text-decoration:none;font:800 16px/1 var(--display);letter-spacing:.05em;padding:8px 11px}.lgsw a.on{background:#fff;color:var(--navy)}
 @media(max-width:620px){.hide-s{display:none}.hero-in{gap:8px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:6px}h1{font-size:40px;margin-bottom:10px}h1 br{display:none}.court-wrap{display:none}.hero .facts{font-size:13px}.seasonbar{margin-bottom:10px}.seasonbar select{font-size:22px}.hero .chip{font-size:12px}th,td{padding:8px 5px}.tb{min-width:40px;margin-right:4px;padding:0 5px}.rk{width:26px}td.rt{min-width:70px}.rbar{display:none}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}td.res{min-width:150px}}
 </style>
 </head>
@@ -250,7 +250,7 @@ tr.clk{cursor:pointer}
 <header class="hero">
   <div class="hero-in">
     <div class="hero-copy">
-      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a><a href="nhl.html?lg=nhl" class="on">NHL</a><a href="mlb.html?lg=mlb" class="">MLB</a></nav>
+      <nav class="lgsw" aria-label="League"><a href="index.html?lg=nba" class="">NBA</a><a href="wnba.html?lg=wnba" class="">WNBA</a><a href="nhl.html?lg=nhl" class="on">NHL</a><a href="mlb.html?lg=mlb" class="">MLB</a><a href="nfl.html?lg=nfl" class="">NFL</a></nav>
       <h1>NHL power ratings <br>1917–2027</h1>
       <div class="seasonbar">
         <button id="prevS" aria-label="Previous season">◀</button>
@@ -467,7 +467,7 @@ tr.clk{cursor:pointer}
         <tbody></tbody>
       </table>
     </div>
-    <p class="hint">Highest and lowest are measured after each day's rating update. The game shown is the last game of that day for the team (the one that produced the rating); results are from the team's point of view. Ties on a value keep the first date it was reached.</p>
+    <p class="hint">Highest and lowest are measured after each day's rating update. The game shown is the last game of that day for the team (the one that produced the rating); results are from the team's point of view. Ties on a value keep the first date it was reached. <span id="recHint"></span></p>
   </section>
 
   <section id="tab-seasons" hidden>
@@ -573,7 +573,7 @@ function glicko2Update(mu, phi, sigma, games, tau){
 
 
 const LEAGUE = {
-  id:'nhl', name:'NHL', pageName:'nhl.html',
+  id:'nhl', recRD:70, name:'NHL', pageName:'nhl.html',
   seasonLabel:function(y){ return (y - 1) + '-' + String(y).slice(2); },
   typeNames:{R:'Regular season', C:'Cup', F:'Cup final', I:'Play-in', P:'Playoffs'},
   defaults:{movScale:2, startRD:50, tau:0.8, hca0:22, sd0:2.4},
@@ -758,7 +758,7 @@ function runHistory(D, S0, onProgress, resume){
         mu[f] = r.mu; phi[f] = r.phi; vol[f] = r.sigma; chg[l] = (r.mu - before) * Q;
         const R = r.mu * Q + 1500;
         rate[p * nT + l] = R; rdA[p * nT + l] = r.phi * Q;
-        if(lastG[l] >= 0){
+        if(lastG[l] >= 0 && r.phi * Q <= (LEAGUE.recRD || 1e9)){      // records only count when the rating is well established (RD low enough)
           if(R > hiR[l]){ hiR[l] = R; hiGi[l] = lastG[l]; }
           if(R < loR[l]){ loR[l] = R; loGi[l] = lastG[l]; }
           if(!out.hi[f] || R > out.hi[f].r) out.hi[f] = {r:R, gi:lastG[l], y:y};
@@ -980,12 +980,13 @@ const GAMES82 = LEAGUE.games;
 function isLiveView(){ return cur().y === LIVE_Y; }
 function projection(){
   const st = R.state, sn = R.seasons[R.seasons.length - 1], rat = function(f){ return st.mu[f] * Q + 1500; }, P = {};
-  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, otl:0, pts:0, ept:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
+  CUR_IDX.forEach(function(f){ P[f] = {f:f, w:0, l:0, t:0, otl:0, pts:0, ept:0, left:0, ew:0, sosS:0, sosN:0, sosAS:0, sosAN:0, upc:[]}; });
   LG.forEach(function(g){
     if(!inStandings(g)) return;
     const h = FK[g.home], a = FK[g.away]; if(!P[h] || !P[a]) return;
     P[h].sosAS += rat(a); P[h].sosAN++; P[a].sosAS += rat(h); P[a].sosAN++;
-    if(isPlayed(g)){
+    if(isPlayed(g) && g.hPts === g.aPts){ P[h].t++; P[a].t++; }
+    else if(isPlayed(g)){
       const hw = g.hPts > g.aPts, wI = hw ? h : a, lI = hw ? a : h;
       P[wI].w++;
       if(PTS){ P[wI].pts += 2; if(g.ex > 0){ P[lI].otl++; P[lI].pts += 1; } else P[lI].l++; } else P[lI].l++;
@@ -1000,10 +1001,10 @@ function projection(){
   });
   CUR_IDX.forEach(function(f){
     const x = P[f]; x.rating = rat(f);
-    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.otl - x.left);
+    x.unsched = Math.max(0, GAMES82 - x.w - x.l - x.t - x.otl - x.left);
     const avg = x.left ? x.ew / x.left : 0.5;
     x.ew += x.unsched * avg; x.rest = x.left + x.unsched;
-    x.projW = x.w + x.ew; x.projL = GAMES82 - x.projW;
+    x.projW = x.w + 0.5 * x.t + x.ew; x.projL = GAMES82 - x.projW;
     if(PTS){ x.ept += x.unsched * (x.left ? x.ept / x.left : 1.1); x.projPts = x.pts + x.ept; }
     x.sos = x.sosN ? x.sosS / x.sosN : NaN;
     x.conf = GROUP_OF[F[f].k].id;
@@ -1026,7 +1027,7 @@ function renderProj(){
     return '<tr data-f="' + x.f + '"><td class="rk">' + n + '</td><td class="l">' + badge(x.f, LIVE_Y) + '<span class="hide-s">' + tname(x.f, LIVE_Y) + '</span></td>' +
       '<td class="rt" style="--p:' + c[0] + ';--s:' + c[1] + '"><b>' + x.rating.toFixed(0) + '</b></td>' +
       (PTS ? '<td>' + x.w + '-' + x.l + '-' + x.otl + '</td><td><b>' + x.pts + '</b></td><td class="c2 mut">' + f1(x.ept) + '</td><td class="c2"><b>' + f1(x.projPts) + '</b></td>'
-           : '<td>' + x.w + '-' + x.l + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td><td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td>') +
+           : '<td>' + x.w + '-' + x.l + (x.t ? '-' + x.t : '') + '</td><td class="c2 mut">' + Math.round(x.ew) + '-' + (x.rest - Math.round(x.ew)) + '</td><td class="c2"><b>' + f1(x.projW) + '-' + f1(x.projL) + '</b></td>') +
       '<td class="mut">' + (isNaN(x.sos) ? '–' : x.sos.toFixed(0)) + '</td></tr>';
   };
   let html = '';
@@ -1383,7 +1384,7 @@ function loadLive(){
 function saveLive(){ try{ localStorage.setItem(LIVE_KEY, JSON.stringify({v:1, games:LG})); }catch(e){} }
 function sortLive(){ LG.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); }
 function isoToDay(iso){ const p = iso.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]) / 86400000 - BASE_DAY; }
-const isPlayed = function(g){ return g.aPts != null && g.hPts != null && g.aPts !== g.hPts; };
+const isPlayed = function(g){ return g.aPts != null && g.hPts != null && (LEAGUE.ties || g.aPts !== g.hPts); };
 const inStandings = function(g){ return g.type === 'R' || g.type === 'C'; };
 
 function cat(T, a, b){ const o = new T(a.length + b.length); o.set(a); o.set(b, a.length); return o; }
@@ -1525,7 +1526,7 @@ function onLiveInput(e){
   if(!el.classList.contains('sc')) return;
   const ai = tr.querySelector('input[data-side=a]'), hi = tr.querySelector('input[data-side=h]');
   const a = ptsOf(ai.value), h = ptsOf(hi.value);
-  if(a != null && h != null){ g.aPts = a; g.hPts = h; delete g.auto; const bad = a === h; ai.classList.toggle('bad', bad); hi.classList.toggle('bad', bad); }
+  if(a != null && h != null){ g.aPts = a; g.hPts = h; delete g.auto; const bad = a === h && !LEAGUE.ties; ai.classList.toggle('bad', bad); hi.classList.toggle('bad', bad); }
   else { g.aPts = null; g.hPts = null; delete g.auto; ai.classList.remove('bad'); hi.classList.remove('bad'); }
   afterLiveChange(false);
 }
@@ -1549,7 +1550,7 @@ function addGame(){
   if(ap !== '' || hp !== ''){
     a = ptsOf(ap); h = ptsOf(hp);
     if(a == null || h == null) return setMsg('#addMsg', 'Enter both scores, or leave both empty.', true);
-    if(a === h) return setMsg('#addMsg', LEAGUE.name + ' games cannot end tied; check the scores.', true);
+    if(a === h && !LEAGUE.ties) return setMsg('#addMsg', LEAGUE.name + ' games cannot end tied; check the scores.', true);
   }
   const k = gkey(date, away, home), ex = liveById(k);
   if(ex){ if(a != null){ ex.aPts = a; ex.hPts = h; if(HOT) ex.ex = xo; } ex.type = type; if(neu) ex.neu = 1; }
@@ -1689,7 +1690,7 @@ function mergeFile(file){
     let g = idx.get(id);
     if(!g){ g = {id:id, date:r[0], away:r[1], home:r[2], type:r[3], neu:r[4], aPts:null, hPts:null, src:'f'}; LG.push(g); idx.set(id, g); added++; }
     else { if(!g.typeEdited) g.type = r[3]; if(r[4]) g.neu = 1; if(!g.src && !g.manual) g.src = 'f'; }
-    if(r[5] != null && r[6] != null && r[5] !== r[6] && (g.aPts == null || g.auto)){
+    if(r[5] != null && r[6] != null && (LEAGUE.ties || r[5] !== r[6]) && (g.aPts == null || g.auto)){
       if(g.aPts !== r[5] || g.hPts !== r[6] || (HOT && (g.ex || 0) !== (r[7] || 0))) filled++;
       g.aPts = r[5]; g.hPts = r[6]; g.auto = 1; if(HOT) g.ex = r[7] || 0;
     }
@@ -1756,7 +1757,7 @@ function rsStatus(){
 function createSimulation(opts){
   const keys = CUR_IDX.map(function(i){ return F[i].k; }), n = keys.length, idx = {};
   keys.forEach(function(k, i){ idx[k] = i; });
-  const base = new Int32Array(n), gp = new Int32Array(n), homeCnt = new Int32Array(n), rem = [];
+  const base = new Float64Array(n), gp = new Int32Array(n), homeCnt = new Int32Array(n), rem = [];
   const nn = n * n, grp = new Int8Array(n).fill(-1), div = new Int8Array(n).fill(-1);
   GROUPS.forEach(function(g, z){ g.teams.forEach(function(k){ if(idx[k] !== undefined) grp[idx[k]] = z; }); });
   (LEAGUE.divisions || []).forEach(function(d, z){ d.forEach(function(k){ if(idx[k] !== undefined) div[idx[k]] = z; }); });
@@ -1782,7 +1783,8 @@ function createSimulation(opts){
     if(!inStandings(x)) return;
     const h = idx[x.home], a = idx[x.away]; if(h === undefined || a === undefined) return;
     gp[h]++; gp[a]++; homeCnt[h]++;
-    if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; rec(B, h, a, x.hPts > x.aPts, Math.abs(x.hPts - x.aPts), x.ex); }
+    if(isPlayed(x) && x.hPts === x.aPts){ played++; base[h] += 0.5; base[a] += 0.5; }
+    else if(isPlayed(x)){ played++; if(x.hPts > x.aPts) base[h]++; else base[a]++; rec(B, h, a, x.hPts > x.aPts, Math.abs(x.hPts - x.aPts), x.ex); }
     else rem.push(h, a, x.neu ? 1 : 0);
   });
   const need = new Int32Array(n); let missingSlots = 0, totalNeed = 0;
@@ -1793,9 +1795,9 @@ function createSimulation(opts){
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd, LIM = 6, TN = 2400, TAB = new Float64Array(TN + 1);
   for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
   const SC = TN / (2 * LIM), hh = sn.hca / Q;
-  const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = PO.pat || {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'}, seedv = new Float64Array(n);
+  const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = PO.pat || {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'}, seedv = new Float64Array(n), SEEDED = LEAGUE.qual === 'mlb' || LEAGUE.qual === 'nfl';
   const reach = new Float64Array(n * (NR + 1));
-  const str = new Float64Array(n), w = new Int32Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
+  const str = new Float64Array(n), w = new Float64Array(n), gms = new Int32Array(n), hn = new Int32Array(n);
   const stubs = new Int32Array(Math.max(2, totalNeed)), key = new Float64Array(n), ord = new Int32Array(SL);
   const GI = GROUPS.map(function(g){ return g.teams.map(function(k){ return idx[k]; }).filter(function(i){ return i !== undefined; }); });
   const pos = new Int32Array(n * SL), sumW = new Float64Array(n), dwn = new Float64Array(n);
@@ -1906,7 +1908,7 @@ function createSimulation(opts){
   });
   known.forEach(function(s){ s.sched.sort(function(p, q){ return p.date < q.date ? -1 : p.date > q.date ? 1 : 0; }); });
   let fixedBracket = null;
-  if(serList.length && LEAGUE.qual !== 'mlb'){
+  if(serList.length && !SEEDED){
     w.set(base); gms.set(gp); copyT(SX, B);
     assignKeys(true); const pk = key.slice();
     const pct = function(i){ return pk[i]; };
@@ -1933,8 +1935,8 @@ function createSimulation(opts){
       return out;
     });
   }
-  function pgame(h, a){
-    let x = (str[h] + hh - str[a] + LIM) * SC;
+  function pgame(h, a, neu){
+    let x = (str[h] + (neu ? 0 : hh) - str[a] + LIM) * SC;
     if(x < 0) x = 0; else if(x > TN - 1e-9) x = TN - 1e-9;
     const i = x | 0, p = TAB[i] + (TAB[i + 1] - TAB[i]) * (x - i);
     return rnd() < p ? h : a;
@@ -1946,13 +1948,13 @@ function createSimulation(opts){
     if(k){ wa = a === k.x ? k.wx : k.wy; wb = a === k.x ? k.wy : k.wx; sched = k.sched; }
     let g = wa + wb;
     if(a < 0 || b < 0) return a < 0 ? b : a;      // a bye
-    const hv = LEAGUE.qual === 'mlb' && rd < NR - 1 ? function(t){ return -seedv[t]; } : function(t){ return key[t]; };
+    const hv = SEEDED && rd < NR - 1 ? function(t){ return -seedv[t]; } : function(t){ return key[t]; };
     const higher = hv(a) >= hv(b) ? a : b, lower = higher === a ? b : a;
     while(wa < need && wb < need){
       let h, aw;
       if(sched && si < sched.length){ h = sched[si].h; aw = sched[si].a; si++; }
       else { h = pat[g % pat.length] === 'H' ? higher : lower; aw = h === a ? b : a; }
-      if(pgame(h, aw) === a) wa++; else wb++;
+      if(pgame(h, aw, PO.neutralFinal && rd === NR - 1) === a) wa++; else wb++;
       g++;
     }
     return wa >= need ? a : b;
@@ -1964,16 +1966,16 @@ function createSimulation(opts){
     const rest = byKey(dv[0].slice(3).concat(dv[1].slice(3))), a1 = dv[0][0], b1 = dv[1][0], aBetter = key[a1] >= key[b1];
     return [a1, aBetter ? rest[1] : rest[0], dv[0][1], dv[0][2], b1, aBetter ? rest[0] : rest[1], dv[1][1], dv[1][2]];
   }
-  function bracketMLB(gi){
-    // three division winners (seeded by record) then three wild cards (by record); seeds 1 and 2 skip the Wild Card Series; no reseeding afterwards
+  function bracketSeeded(gi){
+    // division winners (seeded by record) then the best wild cards; PO.layout lists the first-round slots as seed numbers (-1 = a bye)
     const byKey = function(arr){ return arr.slice().sort(function(p, q){ return key[q] - key[p]; }); };
     const dws = LEAGUE.divOfGroup[gi].map(function(z){ return byKey(GI[gi].filter(function(t){ return div[t] === z; }))[0]; });
-    const wcs = byKey(GI[gi].filter(function(t){ return dws.indexOf(t) < 0; })).slice(0, 3), sd = byKey(dws).concat(wcs);
+    const wcs = byKey(GI[gi].filter(function(t){ return dws.indexOf(t) < 0; })).slice(0, PO.wc), sd = byKey(dws).concat(wcs);
     sd.forEach(function(t, i){ seedv[t] = i + 1; });
-    return [sd[0], -1, sd[3], sd[4], sd[2], sd[5], sd[1], -1];
+    return PO.layout.map(function(i){ return i < 0 ? -1 : sd[i]; });
   }
   function bracketFromSeeds(gi){
-    if(LEAGUE.qual === 'mlb') return bracketMLB(gi);
+    if(SEEDED) return bracketSeeded(gi);
     if(LEAGUE.qual === 'nhl') return bracketNHL(gi);
     const g = GI[gi].slice().sort(function(p, q){ return key[q] - key[p]; });
     let s7 = g[6], s8 = g[7];
@@ -1990,6 +1992,7 @@ function createSimulation(opts){
     for(let guard = 0; guard < 12; guard++){
       cur = cur.map(function(g){
         if(g.length < 2) return g;
+        if(PO.reseed && rd >= 1 && g.length === 4){ const q = g.slice().sort(function(p, r){ return seedv[p] - seedv[r]; }); g = [q[0], q[3], q[1], q[2]]; }   // the top seed meets the lowest survivor
         const nx = []; for(let i = 0; i + 1 < g.length; i += 2) nx.push(series(g[i], g[i + 1], rd));
         return nx;
       });
@@ -2125,6 +2128,7 @@ function startSim(){
   })();
 }
 function wireLive(){
+  if(LEAGUE.recRD) $('#recHint').textContent = 'Only days when the team\u2019s RD is ' + LEAGUE.recRD + ' or lower count, so records come from established ratings and not from a new team\u2019s first seasons.';
   const opts = CUR_IDX.map(function(i){ const e = F[i].e[F[i].e.length - 1]; return '<option value="' + F[i].k + '">' + e[2] + ' ' + e[3] + '</option>'; }).join('');
   $('#aAway').innerHTML = opts; $('#aHome').innerHTML = opts; $('#aHome').selectedIndex = 1;
   $('#aType').innerHTML = TYPE_SHOW.map(function(c){ return '<option value="' + c + '">' + TYPE_NAMES[c] + '</option>'; }).join('');

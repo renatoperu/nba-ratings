@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh data/season.json (NBA), wnba-season.json, nhl-season.json or mlb-season.json with the current season's schedule and results.
+"""Refresh data/season.json (NBA), wnba-season.json, nhl-season.json, mlb-season.json or nfl-season.json with the current season's schedule and results.
 
 Source: the ESPN schedule table published by sportsdataverse/hoopR-nba-data on GitHub
 (nba_schedule_<YYYY>.parquet, where YYYY is the year the season ends, e.g. 2027 for 2026-27).
@@ -39,6 +39,12 @@ LEAGUES = {
         # ESPN abbreviations that differ from the data repository's
         abbr={"LA": "LAK", "NJ": "NJD", "SJ": "SJS", "TB": "TBL", "UTAH": "UTA", "ARI": "UTA", "PHX": "UTA", "VEG": "VGK"},
         fr=set("ANA BOS BUF CAR CBJ CGY CHI COL DAL DET EDM FLA LAK MIN MTL NJD NSH NYI NYR OTT PHI PIT SEA SJS STL TBL TOR UTA VAN VGK WPG WSH".split())),
+    "nfl": dict(
+        year=int(os.environ.get("NFL_SEASON_YEAR") or (dt.date.today().year if dt.date.today().month >= 3 else dt.date.today().year - 1)),    # named for the year the season starts (playoffs run into the next year); rolls over each March
+        url="https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
+        out=os.path.join(DATA, "nfl-season.json"), src="nfldata", org="nflverse", sport="football/nfl", ties=True,
+        abbr={"LA": "LAR", "OAK": "LV", "SD": "LAC", "STL": "LAR", "WSH": "WAS", "JAC": "JAX", "ARZ": "ARI"},
+        fr=set("ARI ATL BAL BUF CAR CHI CIN CLE DAL DEN DET GB HOU IND JAX KC LAC LAR LV MIA MIN NE NO NYG NYJ PHI PIT SEA SF TB TEN WAS".split())),
     "mlb": dict(
         year=int(os.environ.get("MLB_SEASON_YEAR", "2027")),    # MLB seasons sit inside one calendar year
         api="https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate={y}-02-01&endDate={y}-11-30&gameType=R,F,D,L,W",
@@ -64,7 +70,7 @@ def load(source, year):
 
 def game_type(season_type, headline):
     h = (headline or "")
-    if L is LEAGUES["nhl"]:
+    if L is LEAGUES["nhl"] or L is LEAGUES["nfl"]:
         return "P" if season_type == 3 else "R"
     if L is LEAGUES["wnba"]:
         if season_type == 3:
@@ -118,6 +124,20 @@ def goal_ids(year):
     except Exception as e:
         print("WARNING: goal log unavailable (%s); overtime flags come from the previous file" % e)
         return set(), False
+
+
+def convert_nfl(df, year):
+    """nflverse games table -> rows [date, away, home, type, neutral, awayPts|None, homePts|None]; a tie keeps both scores equal."""
+    rows = []
+    for r in df[df.season == year].sort_values(["gameday", "gametime", "game_id"]).itertuples():
+        a = L["abbr"].get(r.away_team, r.away_team)
+        b = L["abbr"].get(r.home_team, r.home_team)
+        if a not in L["fr"] or b not in L["fr"] or r.game_type not in ("REG", "WC", "DIV", "CON", "SB"):
+            continue
+        done = pd.notna(r.home_score) and pd.notna(r.away_score)
+        rows.append([str(r.gameday)[:10], a, b, "R" if r.game_type == "REG" else "P", 1 if r.location == "Neutral" else 0,
+                     int(r.away_score) if done else None, int(r.home_score) if done else None])
+    return rows
 
 
 def convert_nhl(df, ot_ids, have_goals, old_ex):
@@ -231,7 +251,7 @@ def parse_espn(payload):
         done = name == "STATUS_FINAL"
         ap = int(float(away["score"])) if done else None
         hp = int(float(home["score"])) if done else None
-        if done and ap == hp:
+        if done and ap == hp and not L.get("ties"):
             ap = hp = None
         row = [day, a, b, espn_type(stype, headline), 1 if comp.get("neutralSite") else 0, ap, hp]
         if L.get("ot"):
@@ -315,12 +335,23 @@ def main():
     args.out = args.out or L["out"]
     args.year = args.year or L["year"]
     try:
-        df = None if args.league == "mlb" else load(args.source, args.year)
+        if args.league == "nfl":
+            if args.source:
+                df = pd.read_csv(args.source)
+            else:
+                import requests
+                resp = requests.get(L["url"], timeout=120)
+                resp.raise_for_status()
+                df = pd.read_csv(io.StringIO(resp.text))
+        else:
+            df = None if args.league == "mlb" else load(args.source, args.year)
         if args.league == "mlb":
             games = load_mlb(args.source, args.year)
             if UNKNOWN:
                 print("WARNING: unmapped MLB team ids: " + ", ".join(sorted(UNKNOWN)))
             args.no_espn = True
+        elif args.league == "nfl":
+            games = convert_nfl(df, args.year)
         elif args.league == "nhl":
             old_ex = {}
             try:
@@ -361,7 +392,7 @@ def main():
         print("No changes (%d games, %d with results)." % (len(games), sum(1 for g in games if g[5] is not None)))
         return 0
     out = {"season": args.year, "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-           "source": (L["src"] if args.league == "mlb" else "sportsdataverse/" + L["src"] + " + ESPN scoreboard"), "games": games}
+           "source": (L["src"] if args.league == "mlb" else L.get("org", "sportsdataverse") + "/" + L["src"] + " + ESPN scoreboard"), "games": games}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(out, f, separators=(",", ":"))
