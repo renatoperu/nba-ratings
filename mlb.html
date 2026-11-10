@@ -321,7 +321,7 @@ tr.clk{cursor:pointer}
       <summary>How the ratings work</summary>
       <p>Every distinct date is one Glicko-2 rating period, so each rating change maps to the games played that day. Regular season and postseason games all count (switch any of them off in Settings).</p>
       <p>Between seasons the rating carries over and the rating deviation (RD) resets to a smaller starting value, since the team's history is informative. If a franchise disappeared, all continuing teams are moved by the same amount so the league average is back at 1500. A new franchise enters at the rating that keeps the league average at 1500 (Settings lets you choose between that literal rule and first re-centring the continuing teams so entrants come in at exactly 1500).</p>
-      <p>Margin of victory enters through the game score: the winner scores <code>1 / (1 + e^(−margin / 4))</code>. Home field is worth a rating edge that is estimated each season from the previous two regular seasons only, so nothing looks ahead. Neutral-site games (the 2020 bubble) get no edge.</p>
+      <p>A win always raises the rating and a loss always lowers it. The margin only decides by how much: the winner's game score is his expected score plus a share <code>g</code> of the distance left up to a perfect 1, with <code>g = 1 − (1 − g₀)·e^(−(margin − 1) / 4)</code>, so a one-runs win gets the share g₀ (0.3) and a blowout gets nearly all of it; the loser's score mirrors it. Beating a stronger opponent therefore gains more than beating a weaker one by the same margin. Home field is worth a rating edge that is estimated each season from the previous two regular seasons only, so nothing looks ahead. Neutral-site games (the 2020 bubble) get no edge.</p>
       <p>"Win %" in Games is the pre-game probability the home team wins, converted from Glicko-2's expected score to a true win probability.</p>
     </details>
   </section>
@@ -484,19 +484,21 @@ tr.clk{cursor:pointer}
       <div class="card">
         <h2>Glicko-2 parameters</h2>
         <div class="setgrid" id="setForm">
-          <label for="sTau">τ (system)</label><input type="number" id="sTau" data-k="tau" step="0.1" min="0.1" max="1.5">
+          <label for="sTau">τ (system)</label><input type="number" id="sTau" data-k="tau" step="0.05" min="0.05" max="5">
           <label for="sStartRD">RD at season start</label><input type="number" id="sStartRD" data-k="startRD" step="5" min="30" max="350">
           <label for="sNewRD">RD of new teams</label><input type="number" id="sNewRD" data-k="newRD" step="10" min="30" max="350">
           <label for="sVol">Initial volatility</label><input type="number" id="sVol" data-k="initVol" step="0.005" min="0.01">
-          <label for="sMov">Use margin</label><input type="checkbox" id="sMov" data-k="useMov" style="justify-self:start">
-          <label for="sScale">Margin scale (runs)</label><input type="number" id="sScale" data-k="movScale" step="1" min="1">
+          <label for="sMov">Margin adds to a win</label><input type="checkbox" id="sMov" data-k="useMov" style="justify-self:start">
+          <label for="sG0">Share for the smallest win (0–1)</label><input type="number" id="sG0" data-k="g0" step="0.05" min="0" max="1">
+          <label for="sScale">Margin scale (runs)</label><input type="number" id="sScale" data-k="movScale" step="0.5" min="0.5">
+          <label for="sPk">Win-probability scale</label><input type="number" id="sPk" data-k="pk" step="0.05" min="0.3" max="1.5">
           <label for="sHcaMode">Home edge</label>
           <select id="sHcaMode" data-k="hcaMode"><option value="auto">Estimated each season</option><option value="fixed">Fixed value</option></select>
           <label for="sHca">Fixed edge (pts)</label><input type="number" id="sHca" data-k="hca" step="5" min="0" max="100">
           <label for="sEntry">New-team entry</label>
           <select id="sEntry" data-k="entry"><option value="literal">Literal: continuing teams keep their ratings, entrants fill the gap to a 1500 average</option><option value="center">Re-centre continuing teams to 1500 first</option></select>
         </div>
-        <p class="hint">RD at season start is 30 by default and τ is 1.2 (a grid over 216,000 games found start RD 10–30 and τ 0.8–1.6 about equally good: single baseball games are so noisy that ratings move slowly). New franchises start at 350. Margin scales of 2 to 8 runs made almost no difference, so 4 stays.</p>
+        <p class="hint">Defaults come from a search over every game since 1901 (log loss, 4 start-up seasons skipped): start RD 60, τ 1.2, margin scale 6 runs, win-probability scale 0.7, share for the smallest win 0.3. Shares between 0.1 and 0.5 fit about equally well; a pure win/loss score fits clearly worse.</p>
         <div class="checks" style="margin:8px 0 12px">
           <label><input type="checkbox" data-t="R"> Regular season</label>
           <label data-cup><input type="checkbox" data-t="C"> Cup</label>
@@ -541,7 +543,9 @@ function glicko2Update(mu, phi, sigma, games, tau){
   for(const o of games){
     const gg = g(o.phiOp), e = E(o.d, o.phiOp);
     vInv += gg*gg*e*(1-e);
-    sumGS += gg*(o.s - e);
+    // o.k (win/loss mode): the winner scores e + (1-e)*k and the loser e - e*k, so a win always gains and a loss always loses, by more when k (the margin factor, 0..1) is bigger
+    const s = o.k === undefined ? o.s : (o.k >= 0 ? e + (1 - e) * o.k : e + e * o.k);
+    sumGS += gg*(s - e);
   }
   const v = 1 / vInv, delta = v * sumGS;
   const a = Math.log(sigma*sigma);
@@ -567,10 +571,10 @@ function glicko2Update(mu, phi, sigma, games, tau){
 
 
 const LEAGUE = {
-  id:'mlb', recRD:45, name:'MLB', pageName:'mlb.html',
+  id:'mlb', recRD:50, name:'MLB', pageName:'mlb.html',
   seasonLabel:function(y){ return String(y); },
   typeNames:{R:'Regular season', C:'Cup', F:'Cup final', I:'Play-in', P:'Postseason'},
-  defaults:{movScale:4, startRD:30, tau:1.2, hca0:28, sd0:4.3},
+  defaults:{movScale:6, pk:0.7, tau:1.2, startRD:60, hca0:28, sd0:4.3},
   sdRange:[2.5, 6], kShrink:0.85, baseYear:1901,
   ot:false, points:false, spreadStep:0.5, unit:'runs',
   playin:false, cup:false,
@@ -590,7 +594,7 @@ const LEAGUE = {
   games:162, stdTotal:2430, scoreCol:'r',
   liveLabel:'2027', liveFile:'data/mlb-season.json', defaultDate:'2027-03-25', defaultTeam:'NYY',
   hasPostRound:true,
-  keys:{hist:'mlb-history-glicko2-v1', live:'mlb-history-live-v1'},
+  keys:{hist:'mlb-history-glicko2-v2', live:'mlb-history-live-v1'},
   alias:{CWS:['CHW', 'CHA', 'White Sox', 'Chicago White Sox'], CHC:['CHN', 'Cubs', 'Chicago Cubs'], LAD:['LA', 'LAN', 'Dodgers', 'Los Angeles Dodgers'], LAA:['ANA', 'Angels', 'Los Angeles Angels', 'Anaheim'],
     KCR:['KC', 'KCA', 'Kansas City', 'Royals'], SDP:['SD', 'SDN', 'San Diego', 'Padres'], SFG:['SF', 'SFN', 'San Francisco', 'Giants'], TBR:['TB', 'TBA', 'Tampa Bay', 'Rays'],
     WSN:['WSH', 'WAS', 'Washington', 'Nationals'], ATH:['OAK', 'Oakland', 'Athletics', 'Sacramento', "A's"], NYM:['NYN', 'New York Mets', 'Mets'], NYY:['NYA', 'New York Yankees', 'Yankees'],
@@ -620,9 +624,10 @@ function normInv(p){   // Acklam's rational approximation (relative error about 
   q = p - 0.5; r = q * q;
   return (((((-3.969683028665376e+01*r + 2.209460984245205e+02)*r - 2.759285104469687e+02)*r + 1.383577518672690e+02)*r - 3.066479806614716e+01)*r + 2.506628277459239e+00)*q / (((((-5.447609879822406e+01*r + 1.615858368580409e+02)*r - 1.556989798598866e+02)*r + 6.680131188771972e+01)*r - 1.328068155288572e+01)*r + 1);
 }
+function winG(margin, S){ const m = Math.abs(margin), g0 = S.useMov ? S.g0 : 1; return 1 - (1 - g0) * Math.exp(-(m - 1) / S.movScale); }   // margin factor of a win: g0 for a one-point win, towards 1 for a blowout
 function movScore(margin, S){ return S.useMov ? 1 / (1 + Math.exp(-margin / S.movScale)) : (margin > 0 ? 1 : 0); }
 
-const HIST_DEFAULTS = {tau:0.5, initR:1500, newRD:350, startRD:100, initVol:0.06, useMov:true, movScale:10,
+const HIST_DEFAULTS = {scoring:'win', g0:0.3, pk:1, tau:0.5, initR:1500, newRD:350, startRD:100, initVol:0.06, useMov:true, movScale:10,
   hcaMode:'auto', hca:25, hca0:45, sdMode:'auto', sd0:12.5, entry:'literal', types:{R:1, C:1, F:1, I:1, P:1}};
 Object.assign(HIST_DEFAULTS, LEAGUE.defaults || {});
 
@@ -667,20 +672,21 @@ function runHistory(D, S0, onProgress, resume){
   // season statistics of regular-season, non-neutral games (for the home edge and margin spread used in the NEXT seasons)
   const stat = resume ? Object.assign({}, resume.stat) : {};
   D.seasons.forEach(function(sn){
-    let c = 0, ss = 0, sm = 0, sm2 = 0;
+    let c = 0, ss = 0, sw = 0, sm = 0, sm2 = 0;
     for(let gi = sn.g0; gi < sn.g1; gi++){
       if((D.ty[gi] === 0 || D.ty[gi] === 1) && !D.neu[gi]){
-        const m = D.hp[gi] - D.ap[gi]; c++; ss += movScore(m, S); sm += m; sm2 += m * m;
+        const m = D.hp[gi] - D.ap[gi]; c++; ss += movScore(m, S); sw += m > 0 ? 1 : m === 0 ? 0.5 : 0; sm += m; sm2 += m * m;
       }
     }
-    stat[sn.y] = {n:c, ss:ss, sm:sm, sm2:sm2};
+    stat[sn.y] = {n:c, ss:ss, sw:sw, sm:sm, sm2:sm2};
   });
   function seasonParams(y){
-    let c = 0, ss = 0, sm = 0, sm2 = 0;
-    [y - 1, y - 2].forEach(function(p){ const t = stat[p]; if(t){ c += t.n; ss += t.ss; sm += t.sm; sm2 += t.sm2; } });
+    let c = 0, ss = 0, sw = 0, sm = 0, sm2 = 0;
+    [y - 1, y - 2].forEach(function(p){ const t = stat[p]; if(t){ c += t.n; ss += t.ss; sw += t.sw; sm += t.sm; sm2 += t.sm2; } });
     let hca = S.hcaMode === 'fixed' ? S.hca : S.hca0, sd = S.sd0;
     if(c >= 300){
-      if(S.hcaMode === 'auto'){ const p = Math.min(0.9, Math.max(0.1, ss / c)); hca = Math.max(0, Math.min(80, Math.round(Q * Math.log(p / (1 - p)) / 0.98))); }
+      if(S.hcaMode === 'auto' && S.scoring === 'win'){ const p = Math.min(0.9, Math.max(0.1, sw / c)), eh = normCdf(normInv(p) / S.pk); hca = Math.max(0, Math.min(80, Math.round(Q * Math.log(eh / (1 - eh)) / 0.98))); }
+      else if(S.hcaMode === 'auto'){ const p = Math.min(0.9, Math.max(0.1, ss / c)); hca = Math.max(0, Math.min(80, Math.round(Q * Math.log(p / (1 - p)) / 0.98))); }
       if(S.sdMode === 'auto'){ const mm = sm / c, rg = LEAGUE.sdRange || [10, 18]; sd = Math.min(rg[1], Math.max(rg[0], Math.sqrt(sm2 / c - mm * mm))); }
     }
     return {hca:hca, sd:sd};
@@ -725,7 +731,7 @@ function runHistory(D, S0, onProgress, resume){
     const met = {n:0, ll:0, br:0, acc:0};
     const snapMu = new Float64Array(nT), snapPhi = new Float64Array(nT), chg = new Float64Array(nT), lastG = new Int32Array(nT);
     const ent = []; for(let l = 0; l < nT; l++) ent.push([]);
-    const kk = Math.sqrt(P.sd * P.sd + c15 * c15) / P.sd * (LEAGUE.kShrink || 1);   // kShrink < 1 pulls win probabilities toward 50% where the margin scale makes them overconfident (hockey)
+    const kk = S.scoring === 'win' ? S.pk : Math.sqrt(P.sd * P.sd + c15 * c15) / P.sd * (LEAGUE.kShrink || 1);   // kShrink < 1 pulls win probabilities toward 50% where the margin scale makes them overconfident (hockey)
     let p = 0, i = 0, rsEnd = -1;
     while(i < idx.length){
       const day = D.day[idx[i]]; let j = i; while(j < idx.length && D.day[idx[j]] === day) j++;
@@ -735,16 +741,17 @@ function runHistory(D, S0, onProgress, resume){
         const edge = D.neu[gi] ? 0 : P.hca / Q;
         const d = (snapMu[hl] + edge) - snapMu[al];
         const m = D.hp[gi] - D.ap[gi];
-        const sH = movScore(m, S);
+        const sH = movScore(m, S), kH = m === 0 ? 0 : m > 0 ? winG(m, S) : -winG(m, S);
         const gg = g(Math.sqrt(snapPhi[hl] * snapPhi[hl] + snapPhi[al] * snapPhi[al]));
         const e = 1 / (1 + Math.exp(-gg * d));
-        const ph = K ? normCdf(normInv(e) * kk) : e;
+        const ph = (K || S.scoring === 'win') ? normCdf(normInv(e) * kk) : e;
         out.pH[gi] = ph; out.used[gi] = 1;
         const hw = m > 0 ? 1 : 0, pc = Math.min(1 - 1e-6, Math.max(1e-6, ph));
         met.n++;
         if(m === 0){ met.ll += -0.5 * (Math.log(pc) + Math.log(1 - pc)); met.br += (ph - 0.5) * (ph - 0.5); met.acc += 0.5; }   // a tie (hockey before 2005) counts as half a win and half a loss
         else { met.ll += -(hw ? Math.log(pc) : Math.log(1 - pc)); met.br += (ph - hw) * (ph - hw); met.acc += ((ph > 0.5) === !!hw) ? 1 : 0; }
-        ent[hl].push({d:d, phiOp:snapPhi[al], s:sH}); ent[al].push({d:-d, phiOp:snapPhi[hl], s:1 - sH});
+        if(S.scoring === 'win' && m !== 0){ ent[hl].push({d:d, phiOp:snapPhi[al], k:kH}); ent[al].push({d:-d, phiOp:snapPhi[hl], k:-kH}); }
+        else { ent[hl].push({d:d, phiOp:snapPhi[al], s:m === 0 ? 0.5 : sH}); ent[al].push({d:-d, phiOp:snapPhi[hl], s:m === 0 ? 0.5 : 1 - sH}); }
         lastG[hl] = gi; lastG[al] = gi;
       }
       for(let l = 0; l < nT; l++){
@@ -1417,6 +1424,7 @@ function liveProb(hK, aK, neu){
   const st = R.state, sn = R.seasons[R.seasons.length - 1], h = FK[hK], a = FK[aK];
   const d = (st.mu[h] + (neu ? 0 : sn.hca / Q)) - st.mu[a];
   const e = 1 / (1 + Math.exp(-g(Math.sqrt(st.phi[h] * st.phi[h] + st.phi[a] * st.phi[a])) * d));
+  if(S.scoring === 'win') return normCdf(normInv(e) * S.pk);
   if(!S.useMov) return e;
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd * (LEAGUE.kShrink || 1);
   return normCdf(normInv(e) * kk);
@@ -1791,7 +1799,7 @@ function createSimulation(opts){
   const mu = new Float64Array(n), phi = new Float64Array(n);
   CUR_IDX.forEach(function(fi, i){ mu[i] = st.mu[fi]; phi[i] = st.phi[fi]; });
   const c15 = 1.702 * S.movScale, kk = Math.sqrt(sn.sd * sn.sd + c15 * c15) / sn.sd, LIM = 6, TN = 2400, TAB = new Float64Array(TN + 1);
-  for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.useMov ? normCdf(normInv(e) * kk) : e; }
+  for(let i = 0; i <= TN; i++){ const d = -LIM + 2 * LIM * i / TN, e = 1 / (1 + Math.exp(-d)); TAB[i] = S.scoring === 'win' ? normCdf(normInv(e) * S.pk) : S.useMov ? normCdf(normInv(e) * kk) : e; }
   const SC = TN / (2 * LIM), hh = sn.hca / Q;
   const rsDone = rsStatus().done, PO = LEAGUE.playoff, NR = PO.rounds.length, PAT = PO.pat || {3:'HAH', 5:'HHAAH', 7:'HHAAHAH'}, seedv = new Float64Array(n), SEEDED = LEAGUE.qual === 'mlb' || LEAGUE.qual === 'nfl';
   const reach = new Float64Array(n * (NR + 1));
