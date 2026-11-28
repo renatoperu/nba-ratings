@@ -2072,7 +2072,8 @@ function pctCell(f, tip){
 }
 function renderChamp(res, n, rsDone){
   const NR = LEAGUE.playoff.rounds.length, names = LEAGUE.playoff.names;
-  let rows = res.filter(function(r){ return r.reach[NR] > 0; }).sort(function(a, b){ return b.reach[NR] - a.reach[NR]; });
+  // every team that made the playoffs in at least one simulation, best title odds first (ties broken by how deep they go)
+  let rows = res.filter(function(r){ return r.reach[0] > 0; }).sort(function(a, b){ for(let r = NR; r >= 0; r--){ if(b.reach[r] !== a.reach[r]) return b.reach[r] - a.reach[r]; } return 0; });
   const cols = [];
   for(let r = 0; r <= NR; r++){
     if(r === NR || !rows.every(function(x){ return x.reach[r] > 0.9999; })) cols.push(r);
@@ -2086,7 +2087,7 @@ function renderChamp(res, n, rsDone){
     }).join('') + '</tr>';
   });
   $('#simTblC').innerHTML = h + '</tbody>';
-  $('#simChampNote').textContent = (rows.length ? rows.length + ' teams still have a chance. ' : '') + 'Playoff series are played with the current ratings, home court to the better record, and every game still to be played in a series that is already under way uses the real schedule. Based on ' + fmtInt(n) + ' simulations.';
+  $('#simChampNote').textContent = (rows.length ? rows.length + ' teams made the playoffs in at least one simulation; ' + rows.filter(function(r){ return r.reach[NR] > 0; }).length + ' of them won the title at least once. ' : '') + 'Playoff series are played with the current ratings, home court to the better record, and every game still to be played in a series that is already under way uses the real schedule. Based on ' + fmtInt(n) + ' simulations.';
   $('#simChamp').hidden = false;
 }
 function renderSim(res, n){
@@ -2113,6 +2114,23 @@ function renderSim(res, n){
   });
   $('#simOut').hidden = false; $('#simOutW').hidden = GROUPS.length < 2; $('#simEmpty').hidden = true;
 }
+const SIM_KEY = LEAGUE.keys.live + '-lastsim';
+function saveSim(res, n, done, opts){
+  try{ localStorage.setItem(SIM_KEY, JSON.stringify({v:1, y:LIVE_Y, nf:F.length, n:n, at:Date.now(), played:simMeta.played, done:done, unc:opts.unc, fill:opts.fill, res:res}, function(k, v){ return typeof v === 'number' ? Math.round(v * 1e5) / 1e5 : v; })); }catch(e){}
+}
+function restoreSim(){   // show the last simulation saved on this device for this sport
+  try{
+    const raw = localStorage.getItem(SIM_KEY); if(!raw) return;
+    const o = JSON.parse(raw);
+    if(!o || o.v !== 1 || o.y !== LIVE_Y || o.nf !== F.length || !Array.isArray(o.res) || !o.res.length) return;
+    const done = rsStatus().done, when = new Date(o.at).toLocaleString([], {dateStyle:'medium', timeStyle:'short'});
+    if(o.done !== done){ $('#simProg').textContent = 'The last simulation (' + when + ') was run before the regular season ended; simulate again for the playoffs.'; return; }
+    simMeta = {n:o.n, played:o.played};
+    renderSim(o.res, o.n);
+    $('#simProg').textContent = 'Last simulation: ' + fmtInt(o.n) + (done ? ' playoffs' : ' seasons') + ', ' + when + ' (saved on this device).';
+    updateSimInfo();
+  }catch(e){}
+}
 function startSim(){
   if(simBusy) return;
   const n = Math.max(100, Math.min(200000, parseInt($('#simN').value, 10) || 10000));
@@ -2127,7 +2145,7 @@ function startSim(){
       sim.run(Math.min(chunk, n - sim.done));
       if(sim.done < n){ $('#simProg').textContent = 'Simulating… ' + fmtInt(sim.done) + ' / ' + fmtInt(n); setTimeout(step, 0); return; }
       simMeta = {n:n, played:sim.played};
-      renderSim(sim.results(), n);
+      const sres = sim.results(); renderSim(sres, n); saveSim(sres, n, rsStatus().done, {unc:$('#simUnc').checked, fill:$('#simFill').checked});
       $('#simProg').textContent = 'Done: ' + fmtInt(n) + ' seasons in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s.';
     }catch(e){ $('#simProg').textContent = 'Simulation failed: ' + e.message; }
     simBusy = false; $('#btnSim').disabled = false; updateSimInfo();
@@ -2140,7 +2158,7 @@ function wireLive(){
   $('#aType').innerHTML = TYPE_SHOW.map(function(c){ return '<option value="' + c + '">' + TYPE_NAMES[c] + '</option>'; }).join('');
   const open = LG.filter(function(g){ return !isPlayed(g); })[0];
   $('#aDate').value = open ? open.date : LEAGUE.defaultDate;
-  fillLiveFilters(); updateLiveStatus(); updateSimBtn();
+  fillLiveFilters(); updateLiveStatus(); updateSimBtn(); restoreSim();
   if(!LEAGUE.playin) $$('[data-playin]').forEach(function(e){ e.remove(); });
   if(LEAGUE.cup === false) $$('[data-cup]').forEach(function(e){ e.remove(); });
   if(!HOT) $$('[data-ot]').forEach(function(e){ e.remove(); });
